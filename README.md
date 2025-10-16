@@ -1,5 +1,4 @@
-# CS310-Group-21
-## CS310 – Mobile Application Development
+# CS310 – Mobile Application Development (Group 21)
 ## Project Step 1: Proposal & GitHub Repository Setup
 
 ## Project Title
