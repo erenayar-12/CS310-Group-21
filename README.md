@@ -14,7 +14,9 @@ Commitly – Gamified Habit Tracker for Consistency and Motivation
 | Yekta Ata Yiğit | 34246 |
 
 ## Short Description
-Commitly is a gamified habit-tracking app designed for users who try to be consistent in their personal or professional goals. Users can add and configure their habits (daily, weekly, or custom), track streaks, even receive reminders. Also users will be rewarded by earning XP points as they progress, so that users will be using the app in long term. Its standout feature — Team Streaks — allows groups of users to share streaks collectively as an addition, so they will feel accountable socialy and it will be harder to break streaks.
+Commitly is a gamified habit-tracking app designed for users who try to be consistent in their personal or professional goals. Users can add and configure their habits (daily, weekly, or custom), track streaks, even receive reminders. Also users will be rewarded by earning XP points as they progress, so that users will be using the app in long term. 
+
+Its standout feature — Team Streaks — allows groups of users to share streaks collectively as an addition, so they will feel accountable socialy and it will be harder to break streaks.
 
 ## Target Audience & Problem
 Target Audience: General users — students, professionals, and anyone seeking motivation and something to push them to form consistent habits.
