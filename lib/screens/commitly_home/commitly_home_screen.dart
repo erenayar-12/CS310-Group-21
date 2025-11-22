@@ -5,6 +5,7 @@ import '../../data/habit_database.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
 import 'widgets/settings_view.dart';
+import '../commitly_leaderboard/leaderboard_screen.dart';
 
 const bool kUseMockHabits = true; // <-- turn OFF DB, use fake data for UI
 
@@ -169,10 +170,20 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     Habit updatedHabit = habit;
 
     if (kUseMockHabits) {
+      // If already completed today, prevent duplicate streak + progress
+      if (habit.progress >= 1.0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${habit.name}" is already completed today.')),
+        );
+        return;
+      }
+
+      // Mark as fully completed (1.0 means done)
       updatedHabit = habit.copyWith(
+        progress: 1.0,
         streak: habit.streak + 1,
-        progress: (habit.progress + 0.4).clamp(0.0, 1.0),
       );
+
       setState(() {
         final idx = _habits.indexOf(habit);
         if (idx != -1) _habits[idx] = updatedHabit;
@@ -205,28 +216,11 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     setState(() => _currentIndex = index);
   }
 
-  String _appBarTitle() {
-    switch (_currentIndex) {
-      case 1:
-        return 'Add Habit';
-      case 2:
-        return 'Community';
-      case 3:
-        return 'Team';
-      case 4:
-        return 'Settings';
-      default:
-        return 'Commitly';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitle()),
-        centerTitle: true,
-      ),
+
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -242,6 +236,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
           const SizedBox.shrink(),
+          const LeaderboardScreen(),
           const SizedBox.shrink(),
           SettingsView(
             habits: _habits,
