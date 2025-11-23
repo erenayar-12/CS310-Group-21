@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 class WeeklyLeaderboardCard extends StatelessWidget {
   const WeeklyLeaderboardCard({super.key});
 
-  // Mock leaderboard data, now with color + isYou info
+  // mock data for the initial leaderboard
   List<Map<String, dynamic>> get _members => const [
     {
       'rank': '1',
       'name': 'Sarah Chen',
       'xp': '1450 XP',
       'streak': '7-day streak',
-      'color': Color(0xFF8B5CF6), // purple
+      'color': Color(0xFF8B5CF6),
       'isYou': false,
     },
     {
@@ -18,7 +18,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
       'name': 'Mike Johnson',
       'xp': '1320 XP',
       'streak': '6-day streak',
-      'color': Color(0xFF3B82F6), // blue
+      'color': Color(0xFF3B82F6),
       'isYou': false,
     },
     {
@@ -26,7 +26,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
       'name': 'Emma Davis',
       'xp': '1200 XP',
       'streak': '5-day streak',
-      'color': Color(0xFF22C55E), // green
+      'color': Color(0xFF22C55E),
       'isYou': false,
     },
     {
@@ -34,7 +34,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
       'name': 'You',
       'xp': '980 XP',
       'streak': '4-day streak',
-      'color': Color(0xFFF97316), // orange
+      'color': Color(0xFFF97316),
       'isYou': true,
     },
   ];
@@ -56,20 +56,18 @@ class WeeklyLeaderboardCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         elevation: 0,
-        color: const Color(0xFFFFF8E5), // soft yellow like the design
+        color: const Color(0xFFFFF8E5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header area
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Left: title + "Group Leaderboard"
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -101,7 +99,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                     ],
                   ),
 
-                  // Right: "This week"
                   Text(
                     'This week',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -114,7 +111,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
 
             const Divider(height: 1),
 
-            // Rows
             ..._members.map((m) {
               final color = m['color'] as Color;
               final bool isYou = m['isYou'] as bool? ?? false;
@@ -128,7 +124,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Rank
                         Text(
                           '#${m['rank']}',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -138,7 +133,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
 
-                        // Avatar (same colorful style as weekly calendar)
                         CircleAvatar(
                           radius: 18,
                           backgroundColor: color.withOpacity(0.18),
@@ -152,7 +146,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
 
-                        // Name + streak (+ "You" pill)
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +194,6 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                           ),
                         ),
 
-                        // XP on the right
                         Text(
                           m['xp'] as String,
                           style: theme.textTheme.bodyMedium?.copyWith(

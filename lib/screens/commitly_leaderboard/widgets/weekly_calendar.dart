@@ -37,7 +37,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
   void initState() {
     super.initState();
 
-    // same users as before
+    // mock users
     members = [
       MemberWeekProgress(
         name: "Mike Johnson",
@@ -53,7 +53,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
         name: "You",
         initials: "YO",
         color: Colors.deepOrange,
-        isYou: true, // <-- only this one should be clickable
+        isYou: true, // only user calendar should be clickable
       ),
     ];
   }
@@ -75,7 +75,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
           ),
           const SizedBox(height: 12),
 
-          // Render each member’s weekly card
+          // render each members weekly card
           Column(
             children: members
                 .map(
@@ -100,15 +100,12 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
     final today = dateOnly(DateTime.now());
     final d = dateOnly(day);
 
-    // 1) Only allow your own user to tap
     if (!member.isYou) return;
 
-    // 2) Only allow tapping *today* box
     if (d != today) return;
 
     final isCompleted = member.completedDays.contains(d);
 
-    // 3) Ask for confirmation
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -261,10 +258,9 @@ class _MemberWeekCard extends StatelessWidget {
                 date: d.day.toString(),
                 isToday: isToday,
                 isCompleted: isCompleted,
-                isClickable: member.isYou && isToday, // only your today is "active"
+                isClickable: member.isYou && isToday,
               );
 
-              // Only wrap in GestureDetector if it's your row AND today.
               if (member.isYou && isToday) {
                 return GestureDetector(
                   onTap: () => onDayTapped(member, d),
@@ -307,7 +303,6 @@ class _DayBox extends StatelessWidget {
     final borderColor = isToday ? const Color(0xFF6A4BFF) : Colors.grey.shade300;
 
     return Opacity(
-      // Slightly dim other users if you want (optional)
       opacity: isClickable || !isToday ? 1.0 : 1.0,
       child: Container(
         width: 42,
@@ -339,7 +334,6 @@ class _DayBox extends StatelessWidget {
             ),
             const SizedBox(height: 2),
 
-            // Completed = checkmark, else small "x"
             Icon(
               isCompleted ? Icons.check : Icons.close,
               size: 10,

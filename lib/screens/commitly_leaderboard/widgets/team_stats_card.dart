@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class TeamStatsCard extends StatelessWidget {
   const TeamStatsCard({super.key});
 
-  // For now: mock numbers. Later you can pass them in via constructor.
+  // mock numbers for initial design
   final int _totalCompletedDays = 23;
   final double _avgStreak = 4.3;
   final int _onTrackCount = 2;

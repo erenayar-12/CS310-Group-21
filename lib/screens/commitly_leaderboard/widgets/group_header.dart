@@ -22,7 +22,6 @@ class GroupHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Back row + Members button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
