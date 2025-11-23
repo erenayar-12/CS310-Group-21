@@ -9,11 +9,12 @@ class CommitlyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Commitly',
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
+      theme: ThemeData.light(useMaterial3: true).copyWith(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
+          seedColor: Colors.purple,
+          brightness: Brightness.light,
         ),
+        scaffoldBackgroundColor: Colors.grey.shade100, // Light grey background
       ),
       home: const CommitlyHomeScreen(),
     );
