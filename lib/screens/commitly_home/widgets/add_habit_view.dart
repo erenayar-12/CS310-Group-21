@@ -325,12 +325,12 @@ class _AddHabitViewState extends State<AddHabitView> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isSelected
-                                    ? Colors.blue.shade500
-                                    : Colors.grey.shade300,
+                                    ? theme.colorScheme.primary
+                                    : theme.dividerColor,
                                 width: 2,
                               ),
                               color: isSelected
-                                  ? Colors.blue.shade50
+                                  ? theme.colorScheme.primaryContainer.withOpacity(0.3)
                                   : Colors.transparent,
                             ),
                             child: Center(
@@ -375,14 +375,14 @@ class _AddHabitViewState extends State<AddHabitView> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isSelected
-                                    ? Colors.grey.shade900
-                                    : Colors.white,
+                                    ? theme.colorScheme.onSurface
+                                    : theme.colorScheme.surface,
                                 width: 4,
                               ),
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: Colors.grey.shade400,
+                                        color: theme.colorScheme.onSurface.withOpacity(0.3),
                                         blurRadius: 0,
                                         spreadRadius: 2,
                                       ),
@@ -416,7 +416,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                               Text(
                                 'Allow friends to see this habit',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey.shade600,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                                 ),
                               ),
                             ],
@@ -441,7 +441,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+                        color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: theme.dividerColor,
@@ -482,7 +482,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                                       ? 'Description'
                                       : _descriptionController.text,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey.shade600,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
