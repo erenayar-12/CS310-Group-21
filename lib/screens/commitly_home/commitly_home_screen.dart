@@ -5,6 +5,7 @@ import '../../data/habit_database.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
 import 'widgets/settings_view.dart';
+import '../../screens/auth/login_screen.dart';
 
 class CommitlyHomeScreen extends StatefulWidget {
   const CommitlyHomeScreen({super.key});
@@ -151,11 +152,11 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       case 1:
         return 'Add Habit';
       case 2:
-        return 'Community';
+        return 'Week';
       case 3:
-        return 'Team';
+        return 'Grops';
       case 4:
-        return 'Settings';
+        return 'Profile';
       default:
         return 'Commitly';
     }
@@ -208,17 +209,17 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.public_outlined),
             selectedIcon: Icon(Icons.public),
-            label: 'Community',
+            label: 'Week',
           ),
           NavigationDestination(
             icon: Icon(Icons.group_outlined),
             selectedIcon: Icon(Icons.group),
-            label: 'Team',
+            label: 'Groups',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: 'Profile',
           ),
         ],
       ),
