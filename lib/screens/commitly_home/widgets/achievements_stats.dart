@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'achievements_view.dart';
+
 class AchievementsStats extends StatelessWidget {
   const AchievementsStats({super.key});
 
@@ -11,19 +13,27 @@ class AchievementsStats extends StatelessWidget {
       return Expanded(
         child: OutlinedButton.icon(
           onPressed: () {
-            showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(label),
-                content: Text('$label page will be implemented later.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
+            if (label == 'Achievements') {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AchievementsView(),
+                ),
+              );
+            } else {
+              showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(label),
+                  content: Text('$label page will be implemented later.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            }
           },
           icon: Icon(icon, size: 18),
           label: Text(label),
