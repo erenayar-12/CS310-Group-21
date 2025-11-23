@@ -114,15 +114,12 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
     if (kUseMockHabits) {
       setState(() {
-        _habits.removeWhere(
-              (h) => h.id != null && habitIds.contains(h.id),
-        );
+        _habits.removeWhere((h) => h.id != null && habitIds.contains(h.id));
       });
       return;
     }
 
-    final deletedCount =
-    await HabitDatabase.instance.deleteHabits(habitIds);
+    final deletedCount = await HabitDatabase.instance.deleteHabits(habitIds);
     await _loadHabits();
 
     if (!mounted) return;
@@ -130,16 +127,12 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     if (deletedCount > 0) {
       final plural = deletedCount == 1 ? '' : 's';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Deleted $deletedCount habit$plural.'),
-        ),
+        SnackBar(content: Text('Deleted $deletedCount habit$plural.')),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No habits were deleted.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No habits were deleted.')));
     }
   }
 
@@ -173,16 +166,15 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       // If already completed today, prevent duplicate streak + progress
       if (habit.progress >= 1.0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${habit.name}" is already completed today.')),
+          SnackBar(
+            content: Text('"${habit.name}" is already completed today.'),
+          ),
         );
         return;
       }
 
       // Mark as fully completed (1.0 means done)
-      updatedHabit = habit.copyWith(
-        progress: 1.0,
-        streak: habit.streak + 1,
-      );
+      updatedHabit = habit.copyWith(progress: 1.0, streak: habit.streak + 1);
 
       setState(() {
         final idx = _habits.indexOf(habit);
@@ -216,11 +208,9 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     setState(() => _currentIndex = index);
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -231,11 +221,11 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onHabitSelected: _promptHabitCompletion,
             onHoverChanged: _onHoverChanged,
           ),
+          const SizedBox.shrink(),
           AddHabitView(
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
-          const SizedBox.shrink(),
           const LeaderboardScreen(),
           const SizedBox.shrink(),
           SettingsView(
@@ -247,11 +237,11 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF6A4BFF),        // same purple as header
+          backgroundColor: const Color(0xFF6A4BFF), // same purple as header
           indicatorColor: Colors.white24,
           labelTextStyle: MaterialStateProperty.resolveWith(
-                (states) => const TextStyle(
-              color: Colors.white,                         // labels white
+            (states) => const TextStyle(
+              color: Colors.white, // labels white
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -262,23 +252,23 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
           onDestinationSelected: _onNavigationDestinationSelected,
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined,  color: Colors.white70),
-              selectedIcon: Icon(Icons.home,   color: Colors.white),
+              icon: Icon(Icons.home_outlined, color: Colors.white70),
+              selectedIcon: Icon(Icons.home, color: Colors.white),
               label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.calendar_today_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.calendar_today,  color: Colors.white),
+              selectedIcon: Icon(Icons.calendar_today, color: Colors.white),
               label: 'Week',
             ),
             NavigationDestination(
               icon: Icon(Icons.add_circle_outline, color: Colors.white70),
-              selectedIcon: Icon(Icons.add_circle,  color: Colors.white),
+              selectedIcon: Icon(Icons.add_circle, color: Colors.white),
               label: 'Add',
             ),
             NavigationDestination(
               icon: Icon(Icons.group_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.group,  color: Colors.white),
+              selectedIcon: Icon(Icons.group, color: Colors.white),
               label: 'Groups',
             ),
             NavigationDestination(
