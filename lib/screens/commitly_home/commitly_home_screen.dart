@@ -6,6 +6,9 @@ import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
 import 'widgets/settings_view.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/groups/groups_screen.dart';
+import '../../screens/statistics/statistics_screen.dart';
+import 'widgets/custom_bottom_nav_bar.dart';
 
 class CommitlyHomeScreen extends StatefulWidget {
   const CommitlyHomeScreen({super.key});
@@ -152,9 +155,9 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       case 1:
         return 'Add Habit';
       case 2:
-        return 'Week';
+        return 'Week'; // Or 'Statistics' if you prefer
       case 3:
-        return 'Grops';
+        return 'Groups';
       case 4:
         return 'Profile';
       default:
@@ -165,9 +168,13 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: Colors.grey.shade100, // Light background
+      appBar: _currentIndex == 2 ? null : AppBar( // Hide AppBar for Statistics
         title: Text(_appBarTitle()),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -183,8 +190,8 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
-          const SizedBox.shrink(),
-          const SizedBox.shrink(),
+          const StatisticsScreen(), // Add this - replaces SizedBox.shrink()
+          const GroupsScreen(),
           SettingsView(
             habits: _habits,
             isLoading: _isLoading,
@@ -192,36 +199,9 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onNavigationDestinationSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Main',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Add Habit',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.public_outlined),
-            selectedIcon: Icon(Icons.public),
-            label: 'Week',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            selectedIcon: Icon(Icons.group),
-            label: 'Groups',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: CustomBottomNavBar( // Replace NavigationBar with custom one
+        currentIndex: _currentIndex,
+        onTap: _onNavigationDestinationSelected,
       ),
     );
   }
