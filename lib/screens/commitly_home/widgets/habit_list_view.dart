@@ -25,30 +25,36 @@ class HabitListView extends StatelessWidget {
     }
 
     if (habits.isEmpty) {
-      return const Center(
-        child: Text(
-          'No habits yet. Create your first one from the Add Habit tab!',
-          textAlign: TextAlign.center,
+      return Container(
+        color: Colors.grey.shade100, // Add light background
+        child: const Center(
+          child: Text(
+            'No habits yet. Create your first one from the Add Habit tab!',
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
 
-    return SafeArea(
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        itemCount: habits.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final habit = habits[index];
-          final isHovered = hoveredHabitIndex == index;
-          return _HabitListTile(
-            habit: habit,
-            index: index,
-            isHovered: isHovered,
-            onHabitSelected: onHabitSelected,
-            onHoverChanged: onHoverChanged,
-          );
-        },
+    return Container(
+      color: Colors.grey.shade100, // Add light background
+      child: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          itemCount: habits.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final habit = habits[index];
+            final isHovered = hoveredHabitIndex == index;
+            return _HabitListTile(
+              habit: habit,
+              index: index,
+              isHovered: isHovered,
+              onHabitSelected: onHabitSelected,
+              onHoverChanged: onHoverChanged,
+            );
+          },
+        ),
       ),
     );
   }
