@@ -25,22 +25,27 @@ class GroupHeader extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Back to Groups',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 14,
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        'Back to Groups',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 TextButton.icon(
                   style: TextButton.styleFrom(
@@ -54,9 +59,7 @@ class GroupHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  onPressed: () {
-                    // TODO: open members list later
-                  },
+                  onPressed: () {},
                   icon: const Icon(Icons.group, size: 16),
                   label: const Text(
                     'Members',
@@ -68,10 +71,7 @@ class GroupHeader extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Group name
             Text(
               'Study Together',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -79,9 +79,7 @@ class GroupHeader extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -121,7 +119,6 @@ class GroupHeader extends StatelessWidget {
                 ),
               ],
             ),
-
           ],
         ),
       ),

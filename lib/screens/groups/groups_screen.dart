@@ -1,7 +1,6 @@
 import 'package:commitly/screens/commitly_leaderboard/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
+import 'widgets/create_habit_group.dart';
 import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
@@ -14,12 +13,19 @@ class GroupsScreen extends StatefulWidget {
 }
 
 class _GroupsScreenState extends State<GroupsScreen> {
-  // Dummy data - replace with actual data source
+  void _showCreateGroup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const CreateHabitGroup(),
+    );
+  }
+
   final List<TeamMember> _teamMembers = [
-    const TeamMember(id: '1', initials: 'SC', color: 0xFF9C27B0), // Purple
-    const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3), // Blue
-    const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50), // Green
-    const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800), // Orange
+    const TeamMember(id: '1', initials: 'SC', color: 0xFF9C27B0),
+    const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3),
+    const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50),
+    const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800),
   ];
 
   final List<HabitGroup> _habitGroups = [
@@ -158,7 +164,6 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Team Members Card
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -175,53 +180,61 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const Spacer(),
-                Row(
-                  children: _teamMembers.map((member) {
-                    return Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Color(member.color),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          member.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
                 const SizedBox(width: 8),
-                InkWell(
-                  onTap: _showInviteDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(Icons.person_add, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Invite',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                        ..._teamMembers.map((member) {
+                          return Container(
+                            margin: const EdgeInsets.only(left: 4),
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Color(member.color),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                member.initials,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: _showInviteDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.person_add, color: Colors.white, size: 16),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Invite',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -258,9 +271,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
             const SizedBox(width: 8),
             Flexible(
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Navigate to create new group screen
-                },
+                onPressed: _showCreateGroup,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -270,17 +281,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   elevation: 2,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                  children: const [
                     Icon(Icons.add, size: 18),
                     SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'New Group',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Text('New Group'),
                   ],
                 ),
               ),
@@ -706,18 +712,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildInfoItem(
-            'Tap any group to view detailed weekly progress',
-          ),
-          _buildInfoItem(
-            'Compete with team members in real-time',
-          ),
-          _buildInfoItem(
-            'Keep everyone accountable and motivated',
-          ),
-          _buildInfoItem(
-            'Add or remove members from each group',
-          ),
+          _buildInfoItem('Tap any group to view detailed weekly progress'),
+          _buildInfoItem('Compete with team members in real-time'),
+          _buildInfoItem('Keep everyone accountable and motivated'),
+          _buildInfoItem('Add or remove members from each group'),
         ],
       ),
     );
