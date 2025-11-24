@@ -222,18 +222,13 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onHabitSelected: _promptHabitCompletion,
             onHoverChanged: _onHoverChanged,
           ),
-          const SizedBox.shrink(),
+          const SizedBox.shrink(),  //week page will come here
           AddHabitView(
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
           const LeaderboardScreen(),
           const ProfileView(),
-          SettingsView(
-            habits: _habits,
-            isLoading: _isLoading,
-            onDeleteHabits: _handleDeleteSelectedHabits,
-          ),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(
