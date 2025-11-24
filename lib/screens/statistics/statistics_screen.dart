@@ -15,7 +15,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   bool _isLoading = true;
   List<Habit> _habits = [];
   
-  // Use simpler data structures that work with current database
   List<double> _dailyXP = List.filled(30, 0.0); // Last 30 days - will be calculated
   List<double> _weeklyCompletion = [0, 0, 0, 0, 0]; // Fri, Sat, Sun, Tue, Thu
 
@@ -29,7 +28,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     // Load habits
     final habits = await HabitDatabase.instance.fetchHabits();
     
-    // Calculate daily XP from current habits (simplified - based on streaks)
+    // Calculate daily XP from current habits
     // Since we don't have historical data, we'll simulate it based on current streaks
     _calculateDailyXP(habits);
     
@@ -625,17 +624,6 @@ class _WeeklyChartPainter extends CustomPainter {
       );
     }
 
-    // Draw bars (empty for now as per screenshot)
-    // Uncomment to show actual data:
-    // final barPaint = Paint()..color = Colors.blue;
-    // for (int i = 0; i < data.length; i++) {
-    //   final barHeight = (data[i] / maxValue) * size.height;
-    //   final x = i * barWidth;
-    //   canvas.drawRect(
-    //     Rect.fromLTWH(x + 10, size.height - barHeight, barWidth - 20, barHeight),
-    //     barPaint,
-    //   );
-    // }
   }
 
   @override
