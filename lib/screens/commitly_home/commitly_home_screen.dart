@@ -4,8 +4,9 @@ import '../../data/habit.dart';
 import '../../data/habit_database.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
-import 'widgets/settings_view.dart';
+// import 'widgets/settings_view.dart';  -> this was placeholder for profile right?
 import '../commitly_leaderboard/leaderboard_screen.dart';
+import '../../screens/profile/profile_view.dart';
 
 const bool kUseMockHabits = true; // <-- turn OFF DB, use fake data for UI
 
@@ -227,7 +228,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
           const LeaderboardScreen(),
-          const SizedBox.shrink(),
+          const ProfileView(),
           SettingsView(
             habits: _habits,
             isLoading: _isLoading,
