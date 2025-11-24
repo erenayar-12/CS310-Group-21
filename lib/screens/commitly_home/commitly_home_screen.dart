@@ -7,6 +7,7 @@ import 'widgets/habit_list_view.dart';
 // import 'widgets/settings_view.dart';  -> this was placeholder for profile right?
 import '../commitly_leaderboard/leaderboard_screen.dart';
 import '../../screens/profile/profile_view.dart';
+import '../groups/groups_screen.dart';
 
 const bool kUseMockHabits = true; // <-- turn OFF DB, use fake data for UI
 

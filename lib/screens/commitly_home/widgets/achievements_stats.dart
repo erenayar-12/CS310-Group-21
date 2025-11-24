@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'achievements_view.dart';
+import '../../statistics/statistics_view.dart';
 
 class AchievementsStats extends StatelessWidget {
   const AchievementsStats({super.key});
