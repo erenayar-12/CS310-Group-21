@@ -1,3 +1,4 @@
+import 'package:commitly/friend_profile_page.dart';
 import 'package:flutter/material.dart';
 
 class FriendsSection extends StatelessWidget {

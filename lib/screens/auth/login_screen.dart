@@ -11,8 +11,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _birthdateController = TextEditingController();
 
   bool _isLogin = true;
   bool _isLoading = false;
@@ -20,8 +22,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _birthdateController.dispose();
     super.dispose();
   }
 
@@ -47,6 +51,20 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLogin = !_isLogin;
       _formKey.currentState?.reset();
     });
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _birthdateController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
   }
 
   @override
@@ -87,6 +105,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 48),
+
+                if (!_isLogin) ...[
+                  TextFormField(
+                    controller: _usernameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      prefixIcon: Icon(Icons.person_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.length < 3) {
+                        return 'Username must be at least 3 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 TextFormField(
                   controller: _emailController,
@@ -135,7 +172,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   onFieldSubmitted: (_) => _submit(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                if (!_isLogin) ...[
+                  TextFormField(
+                    controller: _birthdateController,
+                    readOnly: true,
+                    onTap: _selectDate,
+                    decoration: const InputDecoration(
+                      labelText: 'Birth Date',
+                      prefixIcon: Icon(Icons.calendar_today_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select your birth date';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 FilledButton(
                   onPressed: _isLoading ? null : _submit,
