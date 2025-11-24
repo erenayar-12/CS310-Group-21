@@ -223,7 +223,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onHabitSelected: _promptHabitCompletion,
             onHoverChanged: _onHoverChanged,
           ),
-          const SizedBox.shrink(),  //week page will come here
+          const WeeklyTrackerPage(),
           AddHabitView(
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
