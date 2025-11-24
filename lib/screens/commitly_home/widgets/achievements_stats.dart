@@ -19,18 +19,10 @@ class AchievementsStats extends StatelessWidget {
                   builder: (context) => const AchievementsView(),
                 ),
               );
-            } else {
-              showDialog<void>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(label),
-                  content: Text('$label page will be implemented later.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+            } else if (label == 'Statistics') {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsScreen(),
                 ),
               );
             }
