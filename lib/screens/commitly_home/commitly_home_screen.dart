@@ -32,7 +32,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
   Future<void> _loadHabits() async {
     if (kUseMockHabits) {
-      // 👇 Hard-coded habits to MATCH YOUR WIREFRAME
+      // Habits for just placeholder
       final mockHabits = <Habit>[
         Habit(
           emoji: '🏋️‍♂️',
