@@ -186,7 +186,7 @@ class FriendProfilePage extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            // PUBLIC HABITS EMPTY CARD (PDF STYLE)
+            // PUBLIC HABITS EMPTY CARD
             Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 20),
