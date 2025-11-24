@@ -12,7 +12,7 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  // Simple emoji icon list – adjust as you like
+  // Simple emoji icon list, may be changed or added more later
   final List<String> _icons = [
     '📚', '💻', '📖', '🏃', '🧘', '🎮', '🎧', '🍎', '🔥', '⭐️',
   ];
@@ -28,7 +28,7 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
 
   void _onCreatePressed() {
     if (_formKey.currentState?.validate() ?? false) {
-      // later you can return data with Navigator.pop(context, ...)
+      // can return data with Navigator.pop(context, ...)
       Navigator.of(context).pop();
     }
   }
