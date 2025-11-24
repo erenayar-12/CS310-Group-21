@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
-import 'group_details_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
