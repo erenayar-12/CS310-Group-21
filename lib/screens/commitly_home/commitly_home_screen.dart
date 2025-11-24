@@ -227,7 +227,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
-          const LeaderboardScreen(),
+          const GroupsScreen(),
           const ProfileView(),
         ],
       ),
