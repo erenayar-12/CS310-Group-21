@@ -1,11 +1,6 @@
-// Import standard Flutter UI components
 import 'package:flutter/material.dart';
-
-// Import the Login screen
 import '../auth/login_screen.dart';
-
-// IMPORT THE NEW WIDGETS FILE
-import 'widgets/profile_widgets.dart';
+import '/screens/profile/widgets.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
