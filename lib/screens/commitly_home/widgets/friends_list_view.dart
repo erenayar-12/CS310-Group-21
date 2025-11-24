@@ -90,13 +90,17 @@ class FriendsListView extends StatelessWidget {
                   Text(f.name,
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  Row(children: [
-                    Icon(Icons.emoji_events, color: Colors.amber, size: 16),
-                    Text(" Lvl ${f.level}   "),
-                    Icon(Icons.local_fire_department,
-                        color: Colors.orange, size: 16),
-                    Text(" ${f.streak} days"),
-                  ]),
+                  Wrap(
+                    spacing: 4.0,
+                    runSpacing: 4.0,
+                    children: [
+                      Icon(Icons.emoji_events, color: Colors.amber, size: 16),
+                      Text(" Lvl ${f.level}   "),
+                      Icon(Icons.local_fire_department,
+                          color: Colors.orange, size: 16),
+                      Text(" ${f.streak} days"),
+                    ],
+                  ),
                 ],
               ),
             ),
