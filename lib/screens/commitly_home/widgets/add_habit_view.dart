@@ -22,55 +22,27 @@ class _AddHabitViewState extends State<AddHabitView> {
   final TextEditingController _descriptionController =
       TextEditingController();
 
-  String _selectedEmoji = '🎯';
-  Color _selectedColor = Colors.blue;
+  String? _selectedEmoji;
   HabitFrequency _selectedFrequency = HabitFrequency.daily;
-  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
-  bool _makePublic = true;
+  int _customDayCount = 1;
+  bool _notifyBeforeHour = false;
   bool _isSubmitting = false;
   bool _isSeeding = false;
 
   static const List<String> _emojiOptions = [
-    '💪',
-    '📚',
-    '💧',
     '🧘',
+    '📚',
     '🏃',
-    '🎨',
-    '✍️',
-    '🎵',
-    '🧹',
-    '🌱',
-    '😴',
+    '🥤',
+    '📝',
+    '💪',
+    '🛏️',
     '🍎',
-    '🎯',
-    '💼',
+    '🎧',
     '🧠',
-    '❤️',
+    '🚴',
+    '🧹',
   ];
-
-  static const List<Color> _colorOptions = [
-    Color(0xFF22C55E), // green
-    Color(0xFF3B82F6), // blue
-    Color(0xFFA855F7), // purple
-    Color(0xFFEF4444), // red
-    Color(0xFFF97316), // orange
-    Color(0xFFEC4899), // pink
-    Color(0xFF06B6D4), // cyan
-    Color(0xFFEAB308), // yellow
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Add listeners to update preview in real-time
-    _nameController.addListener(() {
-      setState(() {});
-    });
-    _descriptionController.addListener(() {
-      setState(() {});
-    });
-  }
 
   @override
   void dispose() {
@@ -90,14 +62,17 @@ class _AddHabitViewState extends State<AddHabitView> {
 
     final name = _nameController.text.trim();
     final description = _descriptionController.text.trim();
+    final customDayCount = _selectedFrequency == HabitFrequency.custom
+        ? _customDayCount
+        : null;
 
     final newHabit = Habit(
       emoji: _selectedEmoji,
       name: name,
       description: description.isEmpty ? null : description,
       frequency: _selectedFrequency,
-      customDayCount: null,
-      notifyBeforeHour: false,
+      customDayCount: customDayCount,
+      notifyBeforeHour: _notifyBeforeHour,
       progress: 0.0,
       streak: 0,
     );
@@ -147,416 +122,175 @@ class _AddHabitViewState extends State<AddHabitView> {
     _nameController.clear();
     _descriptionController.clear();
     setState(() {
-      _selectedEmoji = '🎯';
-      _selectedColor = Colors.blue;
+      _selectedEmoji = null;
       _selectedFrequency = HabitFrequency.daily;
-      _reminderTime = const TimeOfDay(hour: 9, minute: 0);
-      _makePublic = true;
+      _customDayCount = 1;
+      _notifyBeforeHour = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: theme.dividerColor,
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Create Habit',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Emoji (optional)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  // Habit Title Input
-                  _buildSection(
-                    label: 'Habit Title *',
-                    child: TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        hintText: 'e.g., Morning Exercise',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a habit name';
-                        }
-                        return null;
+                  ChoiceChip(
+                    label: const Text('None'),
+                    selected: _selectedEmoji == null,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedEmoji = null;
+                      });
+                    },
+                  ),
+                  ..._emojiOptions.map(
+                    (emoji) => ChoiceChip(
+                      label: Text(emoji, style: const TextStyle(fontSize: 20)),
+                      selected: _selectedEmoji == emoji,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedEmoji = selected ? emoji : null;
+                        });
                       },
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Description Input
-                  _buildSection(
-                    label: 'Description',
-                    child: TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        hintText: 'e.g., 30 minutes of cardio',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                      maxLines: 3,
-                      minLines: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Frequency Selector
-                  _buildSection(
-                    label: 'Frequency',
-                    child: DropdownButtonFormField<HabitFrequency>(
-                      value: _selectedFrequency,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: HabitFrequency.values.map((frequency) {
-                        final text = switch (frequency) {
-                          HabitFrequency.hourly => 'Hourly',
-                          HabitFrequency.daily => 'Daily',
-                          HabitFrequency.weekly => 'Weekly',
-                          HabitFrequency.monthly => 'Monthly',
-                          HabitFrequency.custom => 'Custom',
-                        };
-                        return DropdownMenuItem(
-                          value: frequency,
-                          child: Text(text),
-                        );
-                      }).toList(),
-                      onChanged: (frequency) {
-                        if (frequency != null) {
-                          setState(() {
-                            _selectedFrequency = frequency;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Reminder Time
-                  _buildSection(
-                    label: 'Reminder Time',
-                    child: InkWell(
-                      onTap: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: _reminderTime,
-                        );
-                        if (time != null) {
-                          setState(() {
-                            _reminderTime = time;
-                          });
-                        }
-                      },
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Text(
-                          _reminderTime.format(context),
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Icon Selector
-                  _buildSection(
-                    label: 'Choose Icon',
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 8,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1,
-                      ),
-                      itemCount: _emojiOptions.length,
-                      itemBuilder: (context, index) {
-                        final emoji = _emojiOptions[index];
-                        final isSelected = _selectedEmoji == emoji;
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedEmoji = emoji;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.dividerColor,
-                                width: 2,
-                              ),
-                              color: isSelected
-                                  ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                                  : Colors.transparent,
-                            ),
-                            child: Center(
-                              child: Text(
-                                emoji,
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Color Selector
-                  _buildSection(
-                    label: 'Choose Color',
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 3,
-                      ),
-                      itemCount: _colorOptions.length,
-                      itemBuilder: (context, index) {
-                        final color = _colorOptions[index];
-                        final isSelected = _selectedColor == color;
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedColor = color;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? theme.colorScheme.onSurface
-                                    : theme.colorScheme.surface,
-                                width: 4,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: theme.colorScheme.onSurface.withOpacity(0.3),
-                                        blurRadius: 0,
-                                        spreadRadius: 2,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Make Public Switch
-                  _buildSection(
-                    label: '',
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Make Public',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Allow friends to see this habit',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _makePublic,
-                          onChanged: (value) {
-                            setState(() {
-                              _makePublic = value;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Preview Card
-                  _buildSection(
-                    label: 'Preview',
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.dividerColor,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: _selectedColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _selectedEmoji,
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _nameController.text.isEmpty
-                                      ? 'Habit Title'
-                                      : _nameController.text,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _descriptionController.text.isEmpty
-                                      ? 'Description'
-                                      : _descriptionController.text,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSubmitting ? null : _submit,
-                      icon: _isSubmitting
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.save, size: 18),
-                      label: Text(_isSubmitting ? 'Saving...' : 'Save Habit'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Load Dummy Habits Button (hidden in card but kept for functionality)
-                  if (_isSeeding) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: null,
-                        child: const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Habit name',
+                  hintText: 'Enter a descriptive name',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a habit name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              DropdownMenu<HabitFrequency>(
+                initialSelection: _selectedFrequency,
+                label: const Text('Frequency'),
+                dropdownMenuEntries: HabitFrequency.values.map((frequency) {
+                  final text = switch (frequency) {
+                    HabitFrequency.hourly => 'Hourly',
+                    HabitFrequency.daily => 'Daily',
+                    HabitFrequency.weekly => 'Weekly',
+                    HabitFrequency.monthly => 'Monthly',
+                    HabitFrequency.custom => 'Custom',
+                  };
+                  return DropdownMenuEntry(value: frequency, label: text);
+                }).toList(),
+                onSelected: (frequency) {
+                  if (frequency == null) {
+                    return;
+                  }
+                  setState(() {
+                    _selectedFrequency = frequency;
+                  });
+                },
+              ),
+              if (_selectedFrequency == HabitFrequency.custom) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Custom recurrence days: $_customDayCount',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Slider(
+                  value: _customDayCount.toDouble(),
+                  min: 1,
+                  max: 30,
+                  divisions: 29,
+                  label: '$_customDayCount days',
+                  onChanged: (value) {
+                    setState(() {
+                      _customDayCount = value.round();
+                    });
+                  },
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: _customDayCount / 30,
+                    minHeight: 8,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: _notifyBeforeHour,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Notify me until 1 hour before'),
+                onChanged: (value) {
+                  setState(() {
+                    _notifyBeforeHour = value ?? false;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Create Habit'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSeeding ? null : _seedDummyHabits,
+                      child: _isSeeding
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Load Dummy Habits'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSection({required String label, required Widget child}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (label.isNotEmpty) ...[
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        child,
-      ],
     );
   }
 }
