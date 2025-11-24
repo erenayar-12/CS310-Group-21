@@ -107,13 +107,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, // Light grey background
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: theme.colorScheme.primary,
+                ),
+              )
             : SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 16), // Add bottom padding
+          padding: const EdgeInsets.only(bottom: 16),
           child: Column(
             children: [
               _buildHeader(),
@@ -206,7 +211,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.8,
       children: [
         _buildStatCard(
           icon: Icons.shield,
@@ -242,52 +247,59 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required String label,
     required String value,
   }) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: iconColor, size: 24),
+            child: Icon(icon, color: iconColor, size: 18),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
-                ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
               ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -295,15 +307,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildWeeklyCompletionGraph() {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -312,19 +329,19 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Weekly Completion Rate',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
             child: _WeeklyCompletionChart(
-              data: _weeklyCompletion, // This is already List<double>
+              data: _weeklyCompletion,
             ),
           ),
           const SizedBox(height: 8),
@@ -335,14 +352,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 4),
-              const Text(
+              Text(
                 'Completion %',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -352,15 +372,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildXPOver30Days() {
+    final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16), // Consistent padding
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -369,18 +394,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '→ Daily XP',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.purple,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
-            child: _DailyXPChart(data: _dailyXPList), // Use real data
+            child: _DailyXPChart(data: _dailyXPList),
           ),
         ],
       ),
@@ -388,21 +413,26 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildHabitCompletions() {
+    final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16), // Consistent padding
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -410,10 +440,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Empty state - can be filled with actual data later
         ],
       ),
@@ -421,6 +451,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildCompletionDetails() {
+    final theme = Theme.of(context);
     // Get habits with completion counts
     final habitDetails = _habits.map((habit) {
       return _HabitDetail(
@@ -433,21 +464,25 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     // Add dummy habits if needed for demo
     if (habitDetails.isEmpty) {
       habitDetails.addAll([
-        _HabitDetail(name: 'Morning Exercise', color: Colors.blue, count: 0),
-        _HabitDetail(name: 'Read a Book', color: Colors.purple, count: 0),
-        _HabitDetail(name: 'Drink Water', color: Colors.green, count: 0),
+        _HabitDetail(name: 'Morning Exercise', color: Colors.blue.shade400, count: 0),
+        _HabitDetail(name: 'Read a Book', color: Colors.purple.shade400, count: 0),
+        _HabitDetail(name: 'Drink Water', color: Colors.green.shade400, count: 0),
       ]);
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16), // Consistent padding
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -456,12 +491,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Completion Details',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
@@ -472,6 +507,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildHabitDetailRow(_HabitDetail detail) {
+    final theme = Theme.of(context);
     final displayName = detail.name.length > 20
         ? '${detail.name.substring(0, 20)}...'
         : detail.name;
@@ -486,24 +522,31 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             decoration: BoxDecoration(
               color: detail.color,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: detail.color.withOpacity(0.5),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               displayName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
           Text(
             '${detail.count}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -512,11 +555,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Color _getHabitColor(String emoji) {
-    // Map emojis to colors, or use default
-    if (emoji.contains('🏃') || emoji.contains('💪')) return Colors.blue;
-    if (emoji.contains('📚') || emoji.contains('📖')) return Colors.purple;
-    if (emoji.contains('💧') || emoji.contains('🥤')) return Colors.green;
-    return Colors.grey;
+    // Map emojis to colors, or use default (lighter colors for dark theme)
+    if (emoji.contains('🏃') || emoji.contains('💪')) return Colors.blue.shade400;
+    if (emoji.contains('📚') || emoji.contains('📖')) return Colors.purple.shade400;
+    if (emoji.contains('💧') || emoji.contains('🥤')) return Colors.green.shade400;
+    return Colors.grey.shade400;
   }
 }
 
@@ -542,6 +585,7 @@ class _WeeklyCompletionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final maxValue = data.isEmpty ? 4.0 : data.reduce(math.max).clamp(1.0, 4.0);
     final chartHeight = 160.0;
     final chartWidth = MediaQuery.of(context).size.width - 64;
@@ -560,7 +604,10 @@ class _WeeklyCompletionChart extends StatelessWidget {
                   final value = maxValue - (index * (maxValue / 4));
                   return Text(
                     value.toStringAsFixed(0),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   );
                 }).reversed.toList(),
               ),
@@ -571,7 +618,11 @@ class _WeeklyCompletionChart extends StatelessWidget {
               child: SizedBox(
                 height: chartHeight,
                 child: CustomPaint(
-                  painter: _WeeklyChartPainter(data: data, maxValue: maxValue),
+                  painter: _WeeklyChartPainter(
+                    data: data,
+                    maxValue: maxValue,
+                    gridColor: theme.colorScheme.outlineVariant,
+                  ),
                   size: Size(chartWidth, chartHeight),
                 ),
               ),
@@ -585,12 +636,16 @@ class _WeeklyCompletionChart extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: labels.map((label) {
-              return SizedBox(
-                width: (chartWidth - 40) / labels.length,
+              return Flexible(
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               );
             }).toList(),
@@ -604,13 +659,18 @@ class _WeeklyCompletionChart extends StatelessWidget {
 class _WeeklyChartPainter extends CustomPainter {
   final List<double> data;
   final double maxValue;
+  final Color gridColor;
 
-  _WeeklyChartPainter({required this.data, required this.maxValue});
+  _WeeklyChartPainter({
+    required this.data,
+    required this.maxValue,
+    required this.gridColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.shade300
+      ..color = gridColor.withOpacity(0.3)
       ..strokeWidth = 1;
 
     // Draw grid lines
@@ -634,17 +694,18 @@ class _WeeklyChartPainter extends CustomPainter {
       );
     }
 
-    // Draw bars (empty for now as per screenshot)
-    // Uncomment to show actual data:
-    // final barPaint = Paint()..color = Colors.blue;
-    // for (int i = 0; i < data.length; i++) {
-    //   final barHeight = (data[i] / maxValue) * size.height;
-    //   final x = i * barWidth;
-    //   canvas.drawRect(
-    //     Rect.fromLTWH(x + 10, size.height - barHeight, barWidth - 20, barHeight),
-    //     barPaint,
-    //   );
-    // }
+    // Draw bars with actual data
+    final barPaint = Paint()..color = const Color(0xFF6A4BFF);
+    for (int i = 0; i < data.length; i++) {
+      final barHeight = (data[i] / maxValue) * size.height;
+      final x = i * barWidth;
+      if (barHeight > 0) {
+        canvas.drawRect(
+          Rect.fromLTWH(x + 10, size.height - barHeight, barWidth - 20, barHeight),
+          barPaint,
+        );
+      }
+    }
   }
 
   @override
@@ -660,6 +721,7 @@ class _DailyXPChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final maxValue = 4.0;
     final chartHeight = 160.0;
     final chartWidth = MediaQuery.of(context).size.width - 64;
@@ -670,7 +732,12 @@ class _DailyXPChart extends StatelessWidget {
         SizedBox(
           height: chartHeight,
           child: CustomPaint(
-            painter: _DailyXPChartPainter(data: data, maxValue: maxValue),
+            painter: _DailyXPChartPainter(
+              data: data,
+              maxValue: maxValue,
+              gridColor: theme.colorScheme.outlineVariant,
+              lineColor: theme.colorScheme.primary,
+            ),
             size: Size(chartWidth, chartHeight),
           ),
         ),
@@ -679,12 +746,16 @@ class _DailyXPChart extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: xLabels.map((label) {
-            return SizedBox(
-              width: (chartWidth) / xLabels.length,
+            return Flexible(
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             );
           }).toList(),
@@ -697,13 +768,20 @@ class _DailyXPChart extends StatelessWidget {
 class _DailyXPChartPainter extends CustomPainter {
   final List<double> data;
   final double maxValue;
+  final Color gridColor;
+  final Color lineColor;
 
-  _DailyXPChartPainter({required this.data, required this.maxValue});
+  _DailyXPChartPainter({
+    required this.data,
+    required this.maxValue,
+    required this.gridColor,
+    required this.lineColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
-      ..color = Colors.grey.shade300
+      ..color = gridColor.withOpacity(0.3)
       ..strokeWidth = 0.5;
 
     // Draw horizontal grid lines
@@ -719,7 +797,7 @@ class _DailyXPChartPainter extends CustomPainter {
     // Draw vertical dotted lines for x-axis labels
     final segmentWidth = size.width / 8;
     final dottedPaint = Paint()
-      ..color = Colors.grey.shade300
+      ..color = gridColor.withOpacity(0.2)
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
 
@@ -733,15 +811,15 @@ class _DailyXPChartPainter extends CustomPainter {
       canvas.drawPath(path, dottedPaint);
     }
 
-    // Draw line graph (flat at 0 for now as per screenshot)
+    // Draw line graph
     if (data.isNotEmpty) {
       final linePaint = Paint()
-        ..color = Colors.purple
-        ..strokeWidth = 2
+        ..color = lineColor
+        ..strokeWidth = 2.5
         ..style = PaintingStyle.stroke;
 
       final pointPaint = Paint()
-        ..color = Colors.purple
+        ..color = lineColor
         ..style = PaintingStyle.fill;
 
       final path = Path();
@@ -757,8 +835,12 @@ class _DailyXPChartPainter extends CustomPainter {
           path.lineTo(x, y);
         }
 
-        // Draw point
-        canvas.drawCircle(Offset(x, y), 4, pointPaint);
+        // Draw point with glow effect
+        canvas.drawCircle(Offset(x, y), 5, pointPaint);
+        final glowPaint = Paint()
+          ..color = lineColor.withOpacity(0.3)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(x, y), 8, glowPaint);
       }
 
       canvas.drawPath(path, linePaint);
