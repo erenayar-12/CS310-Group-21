@@ -9,6 +9,7 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/groups/groups_screen.dart';
 import '../../screens/statistics/statistics_screen.dart';
 import 'widgets/custom_bottom_nav_bar.dart';
+import '../../weekly_tracker_page.dart';
 
 class CommitlyHomeScreen extends StatefulWidget {
   const CommitlyHomeScreen({super.key});
@@ -190,7 +191,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onCreateHabit: _handleHabitCreated,
             onSeedDummyHabits: _handleSeedDummyHabits,
           ),
-          const StatisticsScreen(), // Add this - replaces SizedBox.shrink()
+          WeeklyTrackerPage (), // Add this - replaces SizedBox.shrink()
           const GroupsScreen(),
           SettingsView(
             habits: _habits,
