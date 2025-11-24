@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// 1. Reusable Header for sections (e.g. "Notifications", "Appearance")
+// 1. Reusable Header for sections
 class SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -27,7 +27,7 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-// 2. A styled Container used to group settings items together
+// A styled Container used to group settings items together
 class SettingsCard extends StatelessWidget {
   final List<Widget> children;
 
@@ -50,7 +50,7 @@ class SettingsCard extends StatelessWidget {
   }
 }
 
-// 3. Custom Text Field to reduce code repetition for Name, Email, etc.
+//Custom Text Field to reduce code repetition for Name, Email, etc.
 class ProfileTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -83,7 +83,6 @@ class ProfileTextField extends StatelessWidget {
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
-            // We use 'none' to hide the underline border for a cleaner look
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -97,7 +96,7 @@ class ProfileTextField extends StatelessWidget {
   }
 }
 
-// 4. Clickable Tile for actions (Export, Clear Data)
+//Clickable Tile for actions (Export, Clear Data)
 class ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;
