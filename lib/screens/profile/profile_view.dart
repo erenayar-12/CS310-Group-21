@@ -107,7 +107,6 @@ class _ProfileViewState extends State<ProfileView> {
                 children: [
 
                   // --- SECTION: PROFILE FORM ---
-                  // Use SectionHeader (public name)
                   const SectionHeader(icon: Icons.person_outline, title: 'Profile'),
 
                   Card(
@@ -174,7 +173,6 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                             const Divider(height: 32),
 
-                            // Use ProfileTextField (public name)
                             ProfileTextField(
                               label: 'Full Name',
                               controller: _nameController,
@@ -218,7 +216,6 @@ class _ProfileViewState extends State<ProfileView> {
                   const SectionHeader(
                       icon: Icons.notifications_outlined, title: 'Notifications'),
 
-                  // Use SettingsCard (public name)
                   SettingsCard(
                     children: [
                       SwitchListTile.adaptive(
@@ -284,7 +281,6 @@ class _ProfileViewState extends State<ProfileView> {
                       icon: Icons.storage_outlined, title: 'Data Management'),
                   SettingsCard(
                     children: [
-                      // Use ActionTile (public name)
                       ActionTile(
                         icon: Icons.download_outlined,
                         title: 'Export All Data',
