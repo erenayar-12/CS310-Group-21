@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Weekly Tracker page designed to match the PDF UI.
 class WeeklyTrackerPage extends StatefulWidget {
   const WeeklyTrackerPage({super.key});
 
@@ -8,21 +7,19 @@ class WeeklyTrackerPage extends StatefulWidget {
   State<WeeklyTrackerPage> createState() => _WeeklyTrackerPageState();
 }
 
-/// Local model ONLY for this screen – intentionally named
-/// differently from your app's Habit model to avoid conflicts.
 class WeeklyHabit {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color color;
 
-  /// Status for each day of the week:
-  ///  1 = completed (green)
-  ///  0 = missed (X)
-  /// -1 = future/disabled (grey)
+  // Status for each day of the week:
+  //  1 = completed (green)
+  //  0 = missed (X)
+  // -1 = future/disabled (grey)
   final List<int> dayStatuses;
 
-  /// Target number of days per week (used in "This Week: X / target").
+  // Target number of days per week (used in "This Week: X / target").
   final int targetPerWeek;
 
   WeeklyHabit({
@@ -39,9 +36,8 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
   int weekOffset = 0; // 0 = current week (just visual for now)
 
   final List<String> _dayNames = const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  final List<int> _dayNumbers = const [2, 3, 4, 5, 6, 7, 8]; // same as in PDF screenshot
+  final List<int> _dayNumbers = const [2, 3, 4, 5, 6, 7, 8]; 
 
-  // Sample habits mimicking the PDF design
   late List<WeeklyHabit> _habits;
 
   @override
@@ -53,7 +49,6 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
         subtitle: '30 minutes of cardio',
         icon: Icons.fitness_center,
         color: const Color(0xFF31C36A),
-        // Sun..Sat: X, X, ✓, ✓, ✓, (future), (future)
         dayStatuses: [0, 0, 1, 1, 1, -1, -1],
       ),
       WeeklyHabit(
@@ -61,7 +56,6 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
         subtitle: 'Read for at least 20 minutes',
         icon: Icons.menu_book_rounded,
         color: const Color(0xFF1F8CFF),
-        // Sun..Sat: X, X, X, ✓, X, (future), (future)
         dayStatuses: [0, 0, 0, 1, 0, -1, -1],
       ),
     ];
@@ -80,7 +74,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // ---------------- HEADER (gradient) ----------------
+            //HEADER (gradient)
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
@@ -118,7 +112,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 12),
 
-            // ---------------- DATE RANGE CARD ----------------
+            //DATE RANGE CARD
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Card(
@@ -181,7 +175,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 12),
 
-            // ---------------- HABIT CARDS LIST ----------------
+            //HABIT CARDS LIST
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -210,7 +204,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---- Title row with icon ----
+            //  Title row with icon
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -251,7 +245,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 14),
 
-            // ---- Days row ----
+            //Days row
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -338,7 +332,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 12),
 
-            // ---- This Week summary ----
+            //This Week summary
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
