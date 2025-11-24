@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'screens/auth/login_screen.dart';
 
-import 'screens/commitly_home/commitly_home_screen.dart';
 
 class CommitlyApp extends StatelessWidget {
   const CommitlyApp({super.key});
@@ -15,7 +15,7 @@ class CommitlyApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const CommitlyHomeScreen(),
+      home: const LoginScreen(),
     );
   }
 }
