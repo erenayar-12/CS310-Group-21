@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../statistics/statistics_view.dart';
+
 class TodayHabitsHeader extends StatelessWidget {
   const TodayHabitsHeader({super.key});
 
@@ -18,19 +20,9 @@ class TodayHabitsHeader extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              showDialog<void>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Statistics'),
-                  content: const Text(
-                    'Statistics page will be implemented in a later step.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsScreen(),
                 ),
               );
             },
