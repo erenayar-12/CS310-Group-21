@@ -53,6 +53,20 @@ class FriendsSection extends StatelessWidget {
                   title: Text(f['name'] as String),
                   subtitle:
                   Text('🔥 ${f['streak']} · ${f['habit']}'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FriendProfilePage(
+                          name: 'Dummy Friend Profile Page',        // Pass the real name here
+                          level: 99,               // Pass the real level
+                          streak: 99,              // Pass the real streak
+                          topHabit: "Morning Run", // Pass real data
+                          avatarColor: Colors.blue,// Pass avatar color
+                        ),
+                      ),
+                    );
+                  },
                 ),
               );
             }).toList(),
