@@ -58,11 +58,12 @@ class FriendsSection extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => FriendProfilePage(
-                          name: 'Dummy Friend Profile Page',        // Pass the real name here
-                          level: 99,               // Pass the real level
-                          streak: 99,              // Pass the real streak
-                          topHabit: "Morning Run", // Pass real data
-                          avatarColor: Colors.blue,// Pass avatar color
+                          //dummy data to show an example page -> pages will be different for each friend
+                          name: 'Dummy Friend Profile Page',       
+                          level: 99,               
+                          streak: 99,              
+                          topHabit: "Morning Run", 
+                          avatarColor: Colors.blue,
                         ),
                       ),
                     );
