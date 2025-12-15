@@ -3,41 +3,7 @@ import 'package:flutter/material.dart';
 class WeeklyLeaderboardCard extends StatelessWidget {
   const WeeklyLeaderboardCard({super.key});
 
-  // mock data for the initial leaderboard
-  List<Map<String, dynamic>> get _members => const [
-    {
-      'rank': '1',
-      'name': 'Sarah Chen',
-      'xp': '1450 XP',
-      'streak': '7-day streak',
-      'color': Color(0xFF8B5CF6),
-      'isYou': false,
-    },
-    {
-      'rank': '2',
-      'name': 'Mike Johnson',
-      'xp': '1320 XP',
-      'streak': '6-day streak',
-      'color': Color(0xFF3B82F6),
-      'isYou': false,
-    },
-    {
-      'rank': '3',
-      'name': 'Emma Davis',
-      'xp': '1200 XP',
-      'streak': '5-day streak',
-      'color': Color(0xFF22C55E),
-      'isYou': false,
-    },
-    {
-      'rank': '4',
-      'name': 'You',
-      'xp': '980 XP',
-      'streak': '4-day streak',
-      'color': Color(0xFFF97316),
-      'isYou': true,
-    },
-  ];
+  List<Map<String, dynamic>> get _members => [];
 
   String _initialsFor(String name) {
     final parts = name.split(' ');
@@ -56,7 +22,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         elevation: 0,
-        color: const Color(0xFFFFF8E5),
+        color: theme.colorScheme.surfaceContainerHighest,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -75,7 +41,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                         "This Week's Competition",
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -91,7 +57,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                             'Group Leaderboard',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -102,7 +68,7 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                   Text(
                     'This week',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.black54,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -111,7 +77,20 @@ class WeeklyLeaderboardCard extends StatelessWidget {
 
             const Divider(height: 1),
 
-            ..._members.map((m) {
+            if (_members.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: Text(
+                    'No group members yet',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              )
+            else
+              ..._members.map((m) {
               final color = m['color'] as Color;
               final bool isYou = m['isYou'] as bool? ?? false;
 
@@ -168,13 +147,13 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.black,
+                                        color: theme.colorScheme.primary,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'You',
                                         style: TextStyle(
-                                          color: Colors.white,
+                                          color: theme.colorScheme.onPrimary,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                         ),

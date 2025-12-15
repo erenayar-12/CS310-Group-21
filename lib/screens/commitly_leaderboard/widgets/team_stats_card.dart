@@ -19,7 +19,7 @@ class TeamStatsCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        color: const Color(0xFFF5F3FF), // soft purple background
+        color: theme.colorScheme.surfaceContainerHighest,
         elevation: 0,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -30,7 +30,7 @@ class TeamStatsCard extends StatelessWidget {
                 'Team Stats',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -113,14 +113,14 @@ class _StatRow extends StatelessWidget {
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.black54,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

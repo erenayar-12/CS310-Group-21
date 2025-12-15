@@ -37,57 +37,54 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
   void initState() {
     super.initState();
 
-    // mock users
-    members = [
-      MemberWeekProgress(
-        name: "Mike Johnson",
-        initials: "MJ",
-        color: Colors.blue,
-      ),
-      MemberWeekProgress(
-        name: "Emma Davis",
-        initials: "ED",
-        color: Colors.green,
-      ),
-      MemberWeekProgress(
-        name: "You",
-        initials: "YO",
-        color: Colors.deepOrange,
-        isYou: true, // only user calendar should be clickable
-      ),
-    ];
+    members = [];
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "This Week's Details",
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // render each members weekly card
-          Column(
-            children: members
-                .map(
-                  (m) => _MemberWeekCard(
-                member: m,
-                onDayTapped: (member, day) =>
-                    _handleDayTapped(context, member, day),
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "This Week's Details",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-            )
-                .toList(),
-          ),
-        ],
+            ),
+            const SizedBox(height: 12),
+
+            if (members.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: Text(
+                    'No group members yet',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: members
+                    .map(
+                      (m) => _MemberWeekCard(
+                    member: m,
+                    onDayTapped: (member, day) =>
+                        _handleDayTapped(context, member, day),
+                  ),
+                )
+                    .toList(),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -157,6 +154,7 @@ class _MemberWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final today = dateOnly(DateTime.now());
     final start = today.subtract(const Duration(days: 6));
     final weekDays = List.generate(7, (i) => start.add(Duration(days: i)));
@@ -165,9 +163,9 @@ class _MemberWeekCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFF),
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E6FF)),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black12.withOpacity(0.05),
@@ -215,13 +213,13 @@ class _MemberWeekCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black,
+                            color: theme.colorScheme.primary,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'You',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: theme.colorScheme.onPrimary,
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                             ),
@@ -233,9 +231,9 @@ class _MemberWeekCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${member.completedCount}/7 days',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.black54,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -300,7 +298,10 @@ class _DayBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isToday ? const Color(0xFF6A4BFF) : Colors.grey.shade300;
+    final theme = Theme.of(context);
+    final borderColor = isToday 
+        ? theme.colorScheme.primary 
+        : theme.colorScheme.outlineVariant;
 
     return Opacity(
       opacity: isClickable || !isToday ? 1.0 : 1.0,
@@ -309,8 +310,8 @@ class _DayBox extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
           color: isCompleted
-              ? const Color(0xFF6A4BFF).withOpacity(0.15)
-              : Colors.white,
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor, width: 1.2),
         ),
@@ -321,7 +322,9 @@ class _DayBox extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: isToday ? const Color(0xFF6A4BFF) : Colors.grey.shade700,
+                color: isToday 
+                    ? theme.colorScheme.primary 
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 2),
@@ -337,7 +340,9 @@ class _DayBox extends StatelessWidget {
             Icon(
               isCompleted ? Icons.check : Icons.close,
               size: 10,
-              color: isCompleted ? const Color(0xFF6A4BFF) : Colors.grey,
+              color: isCompleted 
+                  ? theme.colorScheme.primary 
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ],
         ),

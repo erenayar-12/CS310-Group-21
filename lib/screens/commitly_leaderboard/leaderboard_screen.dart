@@ -13,20 +13,25 @@ class LeaderboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            GroupHeader(),
-            SizedBox(height: 16),
-            WeeklyLeaderboardCard(),
-            SizedBox(height: 16),
-            WeeklyCalendar(),
-            SizedBox(height: 16),
-            TeamStatsCard(),
-          ],
+    final theme = Theme.of(context);
+    
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              GroupHeader(),
+              SizedBox(height: 16),
+              WeeklyLeaderboardCard(),
+              SizedBox(height: 16),
+              WeeklyCalendar(),
+              SizedBox(height: 16),
+              TeamStatsCard(),
+            ],
+          ),
         ),
       ),
     );
