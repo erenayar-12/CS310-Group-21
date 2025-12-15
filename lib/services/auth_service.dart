@@ -1,15 +1,31 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  User? _currentUser;
+  StreamSubscription<User?>? _authStateSubscription;
 
-  // Get current user
-  User? get currentUser => _auth.currentUser;
+  AuthService() {
+    _authStateSubscription = _auth.authStateChanges().listen((User? user) {
+      _currentUser = user;
+      notifyListeners();
+    });
+  }
 
-  // Auth state changes stream
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
+  }
+
+  User? get currentUser => _currentUser ?? _auth.currentUser;
+
+  bool get isAuthenticated => currentUser != null;
+
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Sign up with email and password
   Future<UserCredential?> signUpWithEmailAndPassword({
     required String email,
     required String password,
@@ -19,6 +35,8 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+      _currentUser = userCredential.user;
+      notifyListeners();
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -27,7 +45,6 @@ class AuthService {
     }
   }
 
-  // Sign in with email and password
   Future<UserCredential?> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -37,6 +54,8 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+      _currentUser = userCredential.user;
+      notifyListeners();
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -45,16 +64,16 @@ class AuthService {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     try {
       await _auth.signOut();
+      _currentUser = null;
+      notifyListeners();
     } catch (e) {
       throw 'Failed to sign out. Please try again.';
     }
   }
 
-  // Handle Firebase Auth exceptions and return user-friendly messages
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':
@@ -82,4 +101,3 @@ class AuthService {
     }
   }
 }
-
