@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../services/theme_service.dart';
 import '/screens/profile/widgets.dart';
 
 class ProfileView extends StatefulWidget {
-  const ProfileView({super.key});
+  final ThemeService? themeService;
+  
+  const ProfileView({this.themeService, super.key});
 
   @override
   State<ProfileView> createState() => _ProfileViewState();
@@ -20,7 +23,6 @@ class _ProfileViewState extends State<ProfileView> {
 
   bool _pushNotifications = true;
   bool _weeklyReports = false;
-  bool _isDarkMode = true;
   bool _isLoggingOut = false;
 
   @override
@@ -311,9 +313,14 @@ class _ProfileViewState extends State<ProfileView> {
                               Icon(Icons.wb_sunny_outlined,
                                   size: 20, color: theme.hintColor),
                               Switch.adaptive(
-                                value: _isDarkMode,
-                                onChanged: (val) =>
-                                    setState(() => _isDarkMode = val),
+                                value: widget.themeService?.isDarkMode ?? false,
+                                onChanged: (val) {
+                                  if (widget.themeService != null) {
+                                    widget.themeService!.setThemeMode(
+                                      val ? ThemeMode.dark : ThemeMode.light,
+                                    );
+                                  }
+                                },
                               ),
                               Icon(Icons.nightlight_round,
                                   size: 20, color: theme.hintColor),
