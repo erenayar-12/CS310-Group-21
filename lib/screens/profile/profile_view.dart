@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../auth/login_screen.dart';
+import '../../services/auth_service.dart';
 import '/screens/profile/widgets.dart';
 
 class ProfileView extends StatefulWidget {
@@ -12,14 +12,27 @@ class ProfileView extends StatefulWidget {
 class _ProfileViewState extends State<ProfileView> {
   // --- STATE VARIABLES ---
   final _formKey = GlobalKey<FormState>();
+  final _authService = AuthService();
 
-  final _nameController = TextEditingController(text: 'Alex Johnson');
-  final _emailController = TextEditingController(text: 'alex@example.com');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _goalController = TextEditingController(text: '5');
 
   bool _pushNotifications = true;
   bool _weeklyReports = false;
   bool _isDarkMode = true;
+  bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize email from Firebase user
+    final user = _authService.currentUser;
+    if (user != null) {
+      _emailController.text = user.email ?? '';
+      _nameController.text = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+    }
+  }
 
   @override
   void dispose() {
@@ -30,11 +43,48 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   // --- LOGIC FUNCTIONS ---
-  void _handleLogout() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
+  Future<void> _handleLogout() async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
     );
+
+    if (shouldLogout != true) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _authService.signOut();
+      // Navigation will be handled by auth state listener in app.dart
+      // No need to manually navigate here
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoggingOut = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to logout: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   void _saveProfile() {
@@ -303,9 +353,15 @@ class _ProfileViewState extends State<ProfileView> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: _handleLogout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Logout'),
+                      onPressed: _isLoggingOut ? null : _handleLogout,
+                      icon: _isLoggingOut
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.logout),
+                      label: Text(_isLoggingOut ? 'Logging out...' : 'Logout'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

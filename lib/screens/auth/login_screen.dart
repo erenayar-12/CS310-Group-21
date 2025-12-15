@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../commitly_home/commitly_home_screen.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,9 +16,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _birthdateController = TextEditingController();
 
+  final _authService = AuthService();
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -33,22 +35,44 @@ class _LoginScreenState extends State<LoginScreen> {
     final isValid = _formKey.currentState?.validate() ?? false;
 
     if (!isValid) return;
+
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      if (_isLogin) {
+        // Sign in
+        await _authService.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+      } else {
+        // Sign up
+        await _authService.signUpWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        // Note: Username and birthdate can be saved to Firestore later
+        // For now, we only handle authentication
+      }
 
-    if (!mounted) return;
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const CommitlyHomeScreen()),
-    );
+      // Navigation will be handled by auth state listener in app.dart
+      // No need to manually navigate here
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _toggleAuthMode() {
     setState(() {
       _isLogin = !_isLogin;
+      _errorMessage = null;
       _formKey.currentState?.reset();
     });
   }
@@ -106,10 +130,44 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
+                // Error message display
+                if (_errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: colorScheme.error),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: colorScheme.onErrorContainer,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: TextStyle(
+                              color: colorScheme.onErrorContainer,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 if (!_isLogin) ...[
                   TextFormField(
                     controller: _usernameController,
                     textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    enableSuggestions: true,
                     decoration: const InputDecoration(
                       labelText: 'Username',
                       prefixIcon: Icon(Icons.person_outline),
