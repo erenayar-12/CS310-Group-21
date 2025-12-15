@@ -1,5 +1,6 @@
 import 'package:commitly/screens/commitly_leaderboard/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'widgets/create_habit_group.dart';
 import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
@@ -14,7 +15,6 @@ class GroupsScreen extends StatefulWidget {
 }
 
 class _GroupsScreenState extends State<GroupsScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
 
   void _showCreateGroup() {
     showDialog(
@@ -103,7 +103,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ),
           const SizedBox(height: 8),
             StreamBuilder<List<HabitGroup>>(
-              stream: _firestoreService.getHabitGroupsStream(),
+              stream: Provider.of<FirestoreService>(context).getHabitGroupsStream(),
               builder: (context, snapshot) {
                 final count = snapshot.data?.length ?? 0;
                 return Text(
@@ -140,7 +140,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         StreamBuilder<List<HabitGroup>>(
-                          stream: _firestoreService.getHabitGroupsStream(),
+                          stream: Provider.of<FirestoreService>(context).getHabitGroupsStream(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData || snapshot.data!.isEmpty) {
                               return const SizedBox.shrink();
@@ -226,8 +226,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   Widget _buildActiveGroupsSection() {
     final theme = Theme.of(context);
+    final firestoreService = Provider.of<FirestoreService>(context);
     return StreamBuilder<List<HabitGroup>>(
-      stream: _firestoreService.getHabitGroupsStream(),
+      stream: firestoreService.getHabitGroupsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

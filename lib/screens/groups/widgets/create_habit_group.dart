@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../data/habit_group.dart' show HabitGroup, GroupStatus;
 import '../../../services/firestore_service.dart';
 
@@ -13,7 +14,6 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _firestoreService = FirestoreService();
   bool _isCreating = false;
 
   // Simple emoji icon list, may be changed or added more later
@@ -56,7 +56,8 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
         inviteLink: '',
       );
 
-      await _firestoreService.createHabitGroup(newGroup);
+      final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+      await firestoreService.createHabitGroup(newGroup);
 
       if (!mounted) return;
 
