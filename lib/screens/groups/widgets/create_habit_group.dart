@@ -71,6 +71,8 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
                 // Group name
                 TextFormField(
                   controller: _nameController,
+                  autocorrect: true,
+                  enableSuggestions: true,
                   decoration: const InputDecoration(
                     labelText: 'Group Name *',
                     hintText: 'e.g. Morning Meditation',
@@ -88,6 +90,8 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
+                  autocorrect: true,
+                  enableSuggestions: true,
                   decoration: const InputDecoration(
                     labelText: 'Description (optional)',
                     hintText: "What's this group about?",

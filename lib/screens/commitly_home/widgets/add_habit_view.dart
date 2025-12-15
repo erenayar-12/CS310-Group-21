@@ -184,6 +184,8 @@ class _AddHabitViewState extends State<AddHabitView> {
                     label: 'Habit Title *',
                     child: TextFormField(
                       controller: _nameController,
+                      autocorrect: true,
+                      enableSuggestions: true,
                       decoration: InputDecoration(
                         hintText: 'e.g., Morning Exercise',
                         border: OutlineInputBorder(
@@ -209,6 +211,8 @@ class _AddHabitViewState extends State<AddHabitView> {
                     label: 'Description',
                     child: TextFormField(
                       controller: _descriptionController,
+                      autocorrect: true,
+                      enableSuggestions: true,
                       decoration: InputDecoration(
                         hintText: 'e.g., 30 minutes of cardio',
                         border: OutlineInputBorder(

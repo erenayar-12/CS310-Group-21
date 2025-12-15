@@ -80,6 +80,8 @@ class ProfileTextField extends StatelessWidget {
         TextFormField(
           controller: controller,
           keyboardType: inputType,
+          autocorrect: inputType == TextInputType.emailAddress ? false : true,
+          enableSuggestions: inputType == TextInputType.emailAddress ? false : true,
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
