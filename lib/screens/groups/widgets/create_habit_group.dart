@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../data/habit_group.dart' show HabitGroup, GroupStatus;
+import '../../../services/firestore_service.dart';
 
 class CreateHabitGroup extends StatefulWidget {
   const CreateHabitGroup({super.key});
@@ -11,6 +13,8 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _firestoreService = FirestoreService();
+  bool _isCreating = false;
 
   // Simple emoji icon list, may be changed or added more later
   final List<String> _icons = [
@@ -26,10 +30,58 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
     super.dispose();
   }
 
-  void _onCreatePressed() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // can return data with Navigator.pop(context, ...)
+  Future<void> _onCreatePressed() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (_isCreating) return;
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    try {
+      final newGroup = HabitGroup(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        icon: _selectedIcon,
+        status: GroupStatus.onTrack,
+        streak: 0,
+        members: [],
+        todayProgress: 0,
+        totalMembers: 1,
+        inviteLink: '',
+      );
+
+      await _firestoreService.createHabitGroup(newGroup);
+
+      if (!mounted) return;
+
       Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Habit group created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create group: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreating = false;
+        });
+      }
     }
   }
 
@@ -210,8 +262,17 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: _onCreatePressed,
-                      child: const Text('Create Group'),
+                      onPressed: _isCreating ? null : _onCreatePressed,
+                      child: _isCreating
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text('Create Group'),
                     ),
                   ],
                 ),

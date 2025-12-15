@@ -4,6 +4,7 @@ import 'widgets/create_habit_group.dart';
 import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
+import '../../services/firestore_service.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -13,6 +14,8 @@ class GroupsScreen extends StatefulWidget {
 }
 
 class _GroupsScreenState extends State<GroupsScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+
   void _showCreateGroup() {
     showDialog(
       context: context,
@@ -20,63 +23,6 @@ class _GroupsScreenState extends State<GroupsScreen> {
       builder: (context) => const CreateHabitGroup(),
     );
   }
-
-  final List<TeamMember> _teamMembers = [
-    const TeamMember(id: '1', initials: 'SC', color: 0xFF9C27B0),
-    const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3),
-    const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50),
-    const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800),
-  ];
-
-  final List<HabitGroup> _habitGroups = [
-    HabitGroup(
-      id: '1',
-      name: 'Study Together',
-      icon: '📚💻',
-      status: GroupStatus.onTrack,
-      streak: 8,
-      members: [
-        const TeamMember(id: '1', initials: 'SC', color: 0xFF9C27B0),
-        const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3),
-        const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50),
-        const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800),
-      ],
-      todayProgress: 2,
-      totalMembers: 4,
-      inviteLink: 'https://habittracker.app/invite/1',
-    ),
-    HabitGroup(
-      id: '2',
-      name: 'Reading Challenge',
-      icon: '📖',
-      status: GroupStatus.onTrack,
-      streak: 5,
-      members: [
-        const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3),
-        const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50),
-        const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800),
-      ],
-      todayProgress: 1,
-      totalMembers: 3,
-      inviteLink: 'https://habittracker.app/invite/2',
-    ),
-    HabitGroup(
-      id: '3',
-      name: 'Morning Exercise',
-      icon: '🏃',
-      status: GroupStatus.onTrack,
-      streak: 12,
-      members: [
-        const TeamMember(id: '1', initials: 'SC', color: 0xFF9C27B0),
-        const TeamMember(id: '2', initials: 'MJ', color: 0xFF2196F3),
-        const TeamMember(id: '3', initials: 'ED', color: 0xFF4CAF50),
-        const TeamMember(id: '4', initials: 'ME', color: 0xFFFF9800),
-      ],
-      todayProgress: 0,
-      totalMembers: 4,
-      inviteLink: 'https://habittracker.app/invite/3',
-    ),
-  ];
 
   void _showInviteDialog() {
     showDialog(
@@ -156,12 +102,18 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '${_habitGroups.length} active groups',
+            StreamBuilder<List<HabitGroup>>(
+              stream: _firestoreService.getHabitGroupsStream(),
+              builder: (context, snapshot) {
+                final count = snapshot.data?.length ?? 0;
+                return Text(
+                  '$count active groups',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),
+                );
+              },
           ),
           const SizedBox(height: 16),
           Container(
@@ -187,50 +139,73 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        ..._teamMembers.map((member) {
-                          return Container(
-                            margin: const EdgeInsets.only(left: 4),
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Color(member.color),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                member.initials,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: _showInviteDialog,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.person_add, color: Colors.white, size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Invite',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                        StreamBuilder<List<HabitGroup>>(
+                          stream: _firestoreService.getHabitGroupsStream(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            final allMembers = <TeamMember>[];
+                            for (final group in snapshot.data!) {
+                              allMembers.addAll(group.members);
+                            }
+                            
+                            final uniqueMembers = <String, TeamMember>{};
+                            for (final member in allMembers) {
+                              if (!uniqueMembers.containsKey(member.id)) {
+                                uniqueMembers[member.id] = member;
+                              }
+                            }
+                            
+                            return Row(
+                              children: uniqueMembers.values.map((member) {
+                    return Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Color(member.color),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          member.initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                            );
+                          },
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _showInviteDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person_add, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          'Invite',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -251,51 +226,83 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   Widget _buildActiveGroupsSection() {
     final theme = Theme.of(context);
+    return StreamBuilder<List<HabitGroup>>(
+      stream: _firestoreService.getHabitGroupsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        final groups = snapshot.data ?? [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Flexible(
-              child: Text(
-                'Active Habit Groups',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-                overflow: TextOverflow.ellipsis,
+                Flexible(
+                  child: Text(
+              'Active Habit Groups',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: ElevatedButton(
-                onPressed: _showCreateGroup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: ElevatedButton(
+                    onPressed: _showCreateGroup,
+              style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.add, size: 18),
-                    SizedBox(width: 4),
-                    Text('New Group'),
-                  ],
-                ),
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+                    child: Row(
+                mainAxisSize: MainAxisSize.min,
+                      children: const [
+                  Icon(Icons.add, size: 18),
+                  SizedBox(width: 4),
+                  Text('New Group'),
+                ],
+                    ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        ..._habitGroups.map((group) => _buildGroupCard(group)),
+            if (groups.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Text(
+                    'No habit groups yet. Create your first one!',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              ...groups.map((group) => _buildGroupCard(group)),
       ],
+        );
+      },
     );
   }
 
@@ -419,18 +426,18 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                         ),
                                       ),
                                     Text(
-                                      group.status == GroupStatus.onTrack
-                                          ? 'On Track'
-                                          : 'Passive',
-                                      style: TextStyle(
+                                  group.status == GroupStatus.onTrack
+                                      ? 'On Track'
+                                      : 'Passive',
+                                  style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: group.status == GroupStatus.onTrack
+                                    color: group.status == GroupStatus.onTrack
                                             ? Colors.green.shade300
                                             : theme.colorScheme.onSurfaceVariant,
                                         letterSpacing: 0.5,
                                       ),
-                                    ),
+                                  ),
                                   ],
                                 ),
                               ),
@@ -446,7 +453,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Icon(
-                                  Icons.local_fire_department,
+                                Icons.local_fire_department,
                                   color: Colors.orange.shade400,
                                   size: 14,
                                 ),
@@ -499,7 +506,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           size: 14,
                           color: theme.colorScheme.primary,
                         ),
-                      ),
+                ),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
@@ -559,17 +566,17 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                    Text(
                                 "Today's Progress",
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: theme.colorScheme.onSurface,
-                                ),
-                              ),
+                      ),
+                    ),
                               Text(
                                 '${group.todayProgress}/${group.totalMembers}',
-                                style: TextStyle(
+                      style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.primary,
@@ -609,14 +616,14 @@ class _GroupsScreenState extends State<GroupsScreen> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: group.members.map((member) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 8),
+                  children: group.members.map((member) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
                               width: 36,
                               height: 36,
-                              decoration: BoxDecoration(
-                                color: Color(member.color),
-                                shape: BoxShape.circle,
+                      decoration: BoxDecoration(
+                        color: Color(member.color),
+                        shape: BoxShape.circle,
                                 border: Border.all(
                                   color: theme.colorScheme.surface,
                                   width: 2.5,
@@ -628,20 +635,20 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  member.initials,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                      ),
+                      child: Center(
+                        child: Text(
+                          member.initials,
+                          style: const TextStyle(
+                            color: Colors.white,
                                     fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                      ),
+                    );
+                  }).toList(),
+                ),
                       ),
                     ),
                   ],
@@ -700,10 +707,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'How Habit Groups Work',
-                  style: TextStyle(
+                'How Habit Groups Work',
+                style: TextStyle(
                     fontSize: 19,
-                    fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
