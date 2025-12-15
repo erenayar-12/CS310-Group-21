@@ -1,9 +1,9 @@
 import 'package:commitly/screens/weekly_tracker/weekly_tracker_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
-import '../../services/theme_service.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
 import '../commitly_leaderboard/leaderboard_screen.dart';
@@ -11,9 +11,7 @@ import '../../screens/profile/profile_view.dart';
 import '../groups/groups_screen.dart';
 
 class CommitlyHomeScreen extends StatefulWidget {
-  final ThemeService? themeService;
-  
-  const CommitlyHomeScreen({this.themeService, super.key});
+  const CommitlyHomeScreen({super.key});
 
   @override
   State<CommitlyHomeScreen> createState() => _CommitlyHomeScreenState();
@@ -22,11 +20,11 @@ class CommitlyHomeScreen extends StatefulWidget {
 class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
   int _currentIndex = 0;
   int? _hoveredHabitIndex;
-  final FirestoreService _firestoreService = FirestoreService();
 
   Future<void> _handleHabitCreated(Habit habit) async {
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     try {
-      await _firestoreService.createHabit(habit);
+      await firestoreService.createHabit(habit);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Habit created successfully!')),
@@ -39,12 +37,11 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     }
   }
 
-
   Future<void> _handleDeleteHabit(Habit habit) async {
     if (habit.id == null) return;
-
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     try {
-      await _firestoreService.deleteHabit(habit.id!);
+      await firestoreService.deleteHabit(habit.id!);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('"${habit.name}" deleted successfully.')),
@@ -58,6 +55,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
   }
 
   Future<void> _promptHabitCompletion(Habit habit) async {
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     final bool? didComplete = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -96,8 +94,8 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       );
 
       if (habit.id != null) {
-        await _firestoreService.updateHabit(habit.id!, updatedHabit);
-        await _firestoreService.createHabitCompletion(
+        await firestoreService.updateHabit(habit.id!, updatedHabit);
+        await firestoreService.createHabitCompletion(
           habitId: habit.id!,
           completedAt: DateTime.now(),
         );
@@ -134,12 +132,13 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final firestoreService = Provider.of<FirestoreService>(context);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: [
           StreamBuilder<List<Habit>>(
-            stream: _firestoreService.getHabitsStream(),
+            stream: firestoreService.getHabitsStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return HabitListView(
@@ -183,7 +182,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
             onCreateHabit: _handleHabitCreated,
           ),
           const GroupsScreen(),
-          ProfileView(themeService: widget.themeService),
+          const ProfileView(),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(
