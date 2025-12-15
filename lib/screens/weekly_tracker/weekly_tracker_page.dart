@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../data/habit.dart';
+import '../../services/firestore_service.dart';
+import '../../services/auth_service.dart';
 
 class WeeklyTrackerPage extends StatefulWidget {
   const WeeklyTrackerPage({super.key});
@@ -7,77 +10,31 @@ class WeeklyTrackerPage extends StatefulWidget {
   State<WeeklyTrackerPage> createState() => _WeeklyTrackerPageState();
 }
 
-class WeeklyHabit {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-
-  // Status for each day of the week:
-  //  1 = completed (green)
-  //  0 = missed (X)
-  // -1 = future/disabled (grey)
-  final List<int> dayStatuses;
-
-  // Target number of days per week (used in "This Week: X / target").
-  final int targetPerWeek;
-
-  WeeklyHabit({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.dayStatuses,
-    this.targetPerWeek = 5,
-  });
-}
-
 class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
-  int weekOffset = 0; // 0 = current week (just visual for now)
-
-  final List<String> _dayNames = const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  final List<int> _dayNumbers = const [2, 3, 4, 5, 6, 7, 8]; 
-
-  late List<WeeklyHabit> _habits;
-
-  @override
-  void initState() {
-    super.initState();
-    _habits = [
-      WeeklyHabit(
-        title: 'Morning Exercise',
-        subtitle: '30 minutes of cardio',
-        icon: Icons.fitness_center,
-        color: const Color(0xFF31C36A),
-        dayStatuses: [0, 0, 1, 1, 1, -1, -1],
-      ),
-      WeeklyHabit(
-        title: 'Read a Book',
-        subtitle: 'Read for at least 20 minutes',
-        icon: Icons.menu_book_rounded,
-        color: const Color(0xFF1F8CFF),
-        dayStatuses: [0, 0, 0, 1, 0, -1, -1],
-      ),
-    ];
-  }
+  int weekOffset = 0;
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   Widget build(BuildContext context) {
-    const gradient = LinearGradient(
-      colors: [Color(0xFF8A36FF), Color(0xFF3F6FFF)],
+    final theme = Theme.of(context);
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary,
+        theme.colorScheme.primaryContainer,
+      ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
-
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             //HEADER (gradient)
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: gradient,
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(20),
@@ -87,25 +44,25 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SizedBox(height: 4),
+                children: [
+                  const SizedBox(height: 4),
                   Text(
                     'Weekly Tracker',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     'Track your habit completion for the week',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: theme.colorScheme.onPrimary.withOpacity(0.7),
                       fontSize: 13,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -132,13 +89,38 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              'November 2 - November 8, 2025',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final weekDays = _getWeekDays(weekOffset);
+                                final start = weekDays.first;
+                                final end = weekDays.last;
+                                final monthNames = [
+                                  'January',
+                                  'February',
+                                  'March',
+                                  'April',
+                                  'May',
+                                  'June',
+                                  'July',
+                                  'August',
+                                  'September',
+                                  'October',
+                                  'November',
+                                  'December'
+                                ];
+                                final startStr =
+                                    '${monthNames[start.month - 1]} ${start.day}';
+                                final endStr =
+                                    '${monthNames[end.month - 1]} ${end.day}, ${end.year}';
+                                return Text(
+                                  '$startStr - $endStr',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 4),
                             TextButton(
@@ -175,14 +157,44 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 12),
 
-            //HABIT CARDS LIST
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _habits.length,
-                itemBuilder: (context, index) {
-                  final habit = _habits[index];
-                  return _buildHabitCard(habit, index);
+              child: StreamBuilder<List<Habit>>(
+                stream: _firestoreService.getHabitsStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error: ${snapshot.error}'),
+                    );
+                  }
+
+                  final habits = snapshot.data ?? [];
+                  
+                  if (habits.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Text(
+                          'Weekly tracker will show your habits here.\nCreate habits to see them tracked weekly.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: habits.length,
+                    itemBuilder: (context, index) {
+                      return _buildHabitCard(habits[index]);
+                    },
+                  );
                 },
               ),
             ),
@@ -192,169 +204,200 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
     );
   }
 
-  Widget _buildHabitCard(WeeklyHabit habit, int habitIndex) {
-    final completedCount = habit.dayStatuses.where((s) => s == 1).length;
+  DateTime _getWeekStart(DateTime date) {
+    final weekday = date.weekday;
+    final daysFromSunday = weekday % 7;
+    final weekStart = date.subtract(Duration(days: daysFromSunday));
+    return DateTime(weekStart.year, weekStart.month, weekStart.day);
+  }
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1.5,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            //  Title row with icon
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+  List<DateTime> _getWeekDays(int offset) {
+    final now = DateTime.now();
+    final weekStart = _getWeekStart(now.add(Duration(days: offset * 7)));
+    return List.generate(7, (i) => weekStart.add(Duration(days: i)));
+  }
+
+  Widget _buildHabitCard(Habit habit) {
+    final theme = Theme.of(context);
+    final weekDays = _getWeekDays(weekOffset);
+    final today = DateTime.now();
+    final todayDateOnly = DateTime(today.year, today.month, today.day);
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: habit.id != null
+          ? _firestoreService.getHabitCompletionsStream(habit.id!)
+          : Stream.value([]),
+      builder: (context, completionsSnapshot) {
+        final completions = completionsSnapshot.data ?? [];
+        final completedDates = completions
+            .where((c) => c['completedAt'] != null)
+            .map((c) {
+              final date = c['completedAt'] as DateTime;
+              return DateTime(date.year, date.month, date.day);
+            })
+            .toSet();
+
+        final completedCount = weekDays.where((day) {
+          final dayDateOnly = DateTime(day.year, day.month, day.day);
+          return completedDates.contains(dayDateOnly);
+        }).length;
+
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 1.5,
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: habit.color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(habit.icon, color: habit.color, size: 26),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        habit.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          habit.emoji ?? '📝',
+                          style: const TextStyle(fontSize: 26),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        habit.subtitle,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            habit.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            habit.description ?? habit.frequencyLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                const SizedBox(height: 14),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(7, (dayIndex) {
+                      final day = weekDays[dayIndex];
+                      final dayDateOnly = DateTime(day.year, day.month, day.day);
+                      final isToday = dayDateOnly == todayDateOnly;
+                      final isFuture = dayDateOnly.isAfter(todayDateOnly);
+                      final isCompleted = completedDates.contains(dayDateOnly);
 
-            const SizedBox(height: 14),
-
-            //Days row
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: List.generate(7, (dayIndex) {
-                  final status = habit.dayStatuses[dayIndex];
-                  final isCompleted = status == 1;
-                  final isFuture = status == -1;
-
-                  Color bgColor;
-                  Color borderColor;
-                  Color textColor;
-                  Widget bottomWidget;
+                      Color bgColor;
+                      Color borderColor;
+                      Color textColor;
+                      Widget bottomWidget;
 
                   if (isFuture) {
-                    bgColor = Colors.grey.shade200;
-                    borderColor = Colors.grey.shade300;
-                    textColor = Colors.grey.shade400;
+                    bgColor = theme.colorScheme.surfaceContainerHighest;
+                    borderColor = theme.colorScheme.outlineVariant;
+                    textColor = theme.colorScheme.onSurfaceVariant.withOpacity(0.5);
                     bottomWidget = const SizedBox(height: 14);
                   } else if (isCompleted) {
-                    bgColor = const Color(0xFF31C36A);
-                    borderColor = const Color(0xFF29A658);
-                    textColor = Colors.white;
-                    bottomWidget = const Icon(Icons.check, size: 14, color: Colors.white);
+                    bgColor = theme.colorScheme.primary;
+                    borderColor = theme.colorScheme.primary;
+                    textColor = theme.colorScheme.onPrimary;
+                    bottomWidget = Icon(
+                      Icons.check,
+                      size: 14,
+                      color: theme.colorScheme.onPrimary,
+                    );
                   } else {
-                    bgColor = Colors.white;
-                    borderColor = Colors.grey.shade300;
-                    textColor = Colors.black87;
+                    bgColor = theme.colorScheme.surface;
+                    borderColor = theme.colorScheme.outlineVariant;
+                    textColor = theme.colorScheme.onSurface;
                     bottomWidget = Text(
                       'X',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                     );
                   }
 
-                  return GestureDetector(
-                    onTap: () {
-                      if (isFuture) return; // do not toggle future days
-                      setState(() {
-                        // toggle 0 <-> 1
-                        habit.dayStatuses[dayIndex] =
-                            habit.dayStatuses[dayIndex] == 1 ? 0 : 1;
-                      });
-                    },
-                    child: Container(
-                      width: 52,
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderColor, width: 1.1),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            _dayNames[dayIndex],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: textColor,
-                            ),
+                      return Container(
+                        width: 52,
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isToday ? Colors.blue : borderColor,
+                            width: isToday ? 2 : 1.1,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _dayNumbers[dayIndex].toString(),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex],
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          bottomWidget,
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            //This Week summary
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'This Week:',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
+                            const SizedBox(height: 4),
+                            Text(
+                              day.day.toString(),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            bottomWidget,
+                          ],
+                        ),
+                      );
+                    }),
                   ),
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                 Text(
-                  '$completedCount / ${habit.targetPerWeek} days',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                  'This Week:',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
+                ),
+                    Text(
+                      '$completedCount / 7 days',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
