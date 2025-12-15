@@ -1,32 +1,66 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../data/habit.dart';
 import '../data/habit_group.dart';
 
-class FirestoreService {
+class FirestoreService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  bool _isLoading = false;
+  String? _error;
 
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
 
   Future<String> createHabit(Habit habit) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to create a habit';
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to create a habit';
+      }
+
+      final habitData = habit.toFirestore();
+      habitData['createdBy'] = user.uid;
+      habitData['createdAt'] = FieldValue.serverTimestamp();
+
+      final docRef = await _firestore.collection('habits').add(habitData);
+      _setLoading(false);
+      return docRef.id;
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
     }
-
-    final habitData = habit.toFirestore();
-    habitData['createdBy'] = user.uid;
-    habitData['createdAt'] = FieldValue.serverTimestamp();
-
-    final docRef = await _firestore.collection('habits').add(habitData);
-    return docRef.id;
   }
 
   Future<Habit?> getHabit(String habitId) async {
+    _setLoading(true);
+    _setError(null);
     try {
       final doc = await _firestore.collection('habits').doc(habitId).get();
-      if (!doc.exists) return null;
+      if (!doc.exists) {
+        _setLoading(false);
+        return null;
+      }
 
       final data = doc.data()!;
     
@@ -37,12 +71,15 @@ class FirestoreService {
               ? createdAt
               : null;
       
+      _setLoading(false);
       return Habit.fromMap({
         ...data,
         'id': doc.id,
         'createdAt': createdAtDateTime?.toIso8601String(),
       });
     } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
       throw 'Failed to get habit: $e';
     }
   }
@@ -78,8 +115,11 @@ class FirestoreService {
   }
 
   Future<List<Habit>> getHabits() async {
+    _setLoading(true);
+    _setError(null);
     final user = _auth.currentUser;
     if (user == null) {
+      _setLoading(false);
       return [];
     }
 
@@ -90,7 +130,7 @@ class FirestoreService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) {
+      final habits = snapshot.docs.map((doc) {
         final data = doc.data();
         final createdAt = data['createdAt'];
         final createdAtDateTime = createdAt is Timestamp
@@ -105,69 +145,104 @@ class FirestoreService {
           'createdAt': createdAtDateTime?.toIso8601String(),
         });
       }).toList();
+      
+      _setLoading(false);
+      return habits;
     } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
       throw 'Failed to get habits: $e';
     }
   }
 
   Future<void> updateHabit(String habitId, Habit habit) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to update a habit';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to update a habit';
+      }
 
-    final doc = await _firestore.collection('habits').doc(habitId).get();
-    if (!doc.exists) {
-      throw 'Habit not found';
-    }
-    if (doc.data()?['createdBy'] != user.uid) {
-      throw 'You can only update your own habits';
-    }
+      final doc = await _firestore.collection('habits').doc(habitId).get();
+      if (!doc.exists) {
+        throw 'Habit not found';
+      }
+      if (doc.data()?['createdBy'] != user.uid) {
+        throw 'You can only update your own habits';
+      }
 
-    final habitData = habit.toFirestore();
-    habitData.remove('createdBy');
-    habitData.remove('createdAt');
+      final habitData = habit.toFirestore();
+      habitData.remove('createdBy');
+      habitData.remove('createdAt');
 
-    await _firestore.collection('habits').doc(habitId).update(habitData);
+      await _firestore.collection('habits').doc(habitId).update(habitData);
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
 
   Future<void> deleteHabit(String habitId) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to delete a habit';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to delete a habit';
+      }
 
-    final doc = await _firestore.collection('habits').doc(habitId).get();
-    if (!doc.exists) {
-      throw 'Habit not found';
-    }
-    if (doc.data()?['createdBy'] != user.uid) {
-      throw 'You can only delete your own habits';
-    }
+      final doc = await _firestore.collection('habits').doc(habitId).get();
+      if (!doc.exists) {
+        throw 'Habit not found';
+      }
+      if (doc.data()?['createdBy'] != user.uid) {
+        throw 'You can only delete your own habits';
+      }
 
-    await _firestore.collection('habits').doc(habitId).delete();
+      await _firestore.collection('habits').doc(habitId).delete();
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
 
-  
-
   Future<String> createHabitGroup(HabitGroup group) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to create a habit group';
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to create a habit group';
+      }
+
+      final groupData = group.toFirestore();
+      groupData['createdBy'] = user.uid;
+      groupData['createdAt'] = FieldValue.serverTimestamp();
+
+      final docRef = await _firestore.collection('habitGroups').add(groupData);
+      _setLoading(false);
+      return docRef.id;
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
     }
-
-    final groupData = group.toFirestore();
-    groupData['createdBy'] = user.uid;
-    groupData['createdAt'] = FieldValue.serverTimestamp();
-
-    final docRef = await _firestore.collection('habitGroups').add(groupData);
-    return docRef.id;
   }
 
   Future<HabitGroup?> getHabitGroup(String groupId) async {
+    _setLoading(true);
+    _setError(null);
     try {
       final doc = await _firestore.collection('habitGroups').doc(groupId).get();
-      if (!doc.exists) return null;
+      if (!doc.exists) {
+        _setLoading(false);
+        return null;
+      }
 
       final data = doc.data()!;
     
@@ -176,8 +251,11 @@ class FirestoreService {
         data['createdAt'] = createdAt.toDate();
       }
       
+      _setLoading(false);
       return HabitGroup.fromFirestore(data, doc.id);
     } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
       throw 'Failed to get habit group: $e';
     }
   }
@@ -207,8 +285,11 @@ class FirestoreService {
   }
 
   Future<List<HabitGroup>> getHabitGroups() async {
+    _setLoading(true);
+    _setError(null);
     final user = _auth.currentUser;
     if (user == null) {
+      _setLoading(false);
       return [];
     }
 
@@ -219,7 +300,7 @@ class FirestoreService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) {
+      final groups = snapshot.docs.map((doc) {
         final data = doc.data();
         
         final createdAt = data['createdAt'];
@@ -228,7 +309,12 @@ class FirestoreService {
         }
         return HabitGroup.fromFirestore(data, doc.id);
       }).toList();
+      
+      _setLoading(false);
+      return groups;
     } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
       throw 'Failed to get habit groups: $e';
     }
   }
@@ -253,62 +339,87 @@ class FirestoreService {
   }
 
   Future<void> updateHabitGroup(String groupId, HabitGroup group) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to update a habit group';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to update a habit group';
+      }
 
-    final doc = await _firestore.collection('habitGroups').doc(groupId).get();
-    if (!doc.exists) {
-      throw 'Habit group not found';
-    }
-    if (doc.data()?['createdBy'] != user.uid) {
-      throw 'You can only update your own habit groups';
-    }
+      final doc = await _firestore.collection('habitGroups').doc(groupId).get();
+      if (!doc.exists) {
+        throw 'Habit group not found';
+      }
+      if (doc.data()?['createdBy'] != user.uid) {
+        throw 'You can only update your own habit groups';
+      }
 
-    final groupData = group.toFirestore();
-    groupData.remove('createdBy');
-    groupData.remove('createdAt');
+      final groupData = group.toFirestore();
+      groupData.remove('createdBy');
+      groupData.remove('createdAt');
 
-    await _firestore.collection('habitGroups').doc(groupId).update(groupData);
+      await _firestore.collection('habitGroups').doc(groupId).update(groupData);
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
 
   Future<void> deleteHabitGroup(String groupId) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to delete a habit group';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to delete a habit group';
+      }
 
-    final doc = await _firestore.collection('habitGroups').doc(groupId).get();
-    if (!doc.exists) {
-      throw 'Habit group not found';
-    }
-    if (doc.data()?['createdBy'] != user.uid) {
-      throw 'You can only delete your own habit groups';
-    }
+      final doc = await _firestore.collection('habitGroups').doc(groupId).get();
+      if (!doc.exists) {
+        throw 'Habit group not found';
+      }
+      if (doc.data()?['createdBy'] != user.uid) {
+        throw 'You can only delete your own habit groups';
+      }
 
-    await _firestore.collection('habitGroups').doc(groupId).delete();
+      await _firestore.collection('habitGroups').doc(groupId).delete();
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
-
-
 
   Future<void> createHabitCompletion({
     required String habitId,
     required DateTime completedAt,
     String? notes,
   }) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to create a habit completion';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to create a habit completion';
+      }
 
-    await _firestore.collection('habitCompletions').add({
-      'habitId': habitId,
-      'userId': user.uid,
-      'completedAt': Timestamp.fromDate(completedAt),
-      'notes': notes,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+      await _firestore.collection('habitCompletions').add({
+        'habitId': habitId,
+        'userId': user.uid,
+        'completedAt': Timestamp.fromDate(completedAt),
+        'notes': notes,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
 
   Stream<List<Map<String, dynamic>>> getHabitCompletionsStream(String habitId) {
@@ -330,20 +441,28 @@ class FirestoreService {
   }
 
   Future<void> deleteHabitCompletion(String completionId) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw 'User must be authenticated to delete a habit completion';
-    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to delete a habit completion';
+      }
 
-    final doc = await _firestore.collection('habitCompletions').doc(completionId).get();
-    if (!doc.exists) {
-      throw 'Habit completion not found';
-    }
-    if (doc.data()?['userId'] != user.uid) {
-      throw 'You can only delete your own habit completions';
-    }
+      final doc = await _firestore.collection('habitCompletions').doc(completionId).get();
+      if (!doc.exists) {
+        throw 'Habit completion not found';
+      }
+      if (doc.data()?['userId'] != user.uid) {
+        throw 'You can only delete your own habit completions';
+      }
 
-    await _firestore.collection('habitCompletions').doc(completionId).delete();
+      await _firestore.collection('habitCompletions').doc(completionId).delete();
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
   }
 }
-
