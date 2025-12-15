@@ -98,25 +98,37 @@ class _HabitCardState extends State<HabitCard> {
                                   onExit: (_) => setState(() => _isDeleteHovered = false),
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
-                                    width: 32,
-                                    height: 32,
+                                    width: 36,
+                                    height: 36,
                                     decoration: BoxDecoration(
                                       color: _isDeleteHovered
-                                          ? Colors.red.shade100
+                                          ? Colors.red.shade50
                                           : Colors.transparent,
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: _isDeleteHovered
-                                            ? Colors.red.shade400
+                                            ? Colors.red
                                             : Colors.transparent,
-                                        width: 2,
+                                        width: 3,
                                       ),
+                                      boxShadow: _isDeleteHovered
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.red.withOpacity(0.4),
+                                                blurRadius: 8,
+                                                spreadRadius: 1,
+                                              ),
+                                            ]
+                                          : null,
                                     ),
                                     child: IconButton(
-                                      icon: const Icon(Icons.delete_outline, size: 20),
-                                      color: _isDeleteHovered
-                                          ? Colors.red.shade700
-                                          : Colors.red.shade400,
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        size: 20,
+                                        color: _isDeleteHovered
+                                            ? Colors.red.shade700
+                                            : Colors.red.shade400,
+                                      ),
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () => _showDeleteDialog(context),
