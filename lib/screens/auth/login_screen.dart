@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
 
@@ -16,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _birthdateController = TextEditingController();
 
-  final _authService = AuthService();
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -41,16 +41,17 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
+    final authService = Provider.of<AuthService>(context, listen: false);
     try {
       if (_isLogin) {
         // Sign in
-        await _authService.signInWithEmailAndPassword(
+        await authService.signInWithEmailAndPassword(
           email: _emailController.text,
           password: _passwordController.text,
         );
       } else {
         // Sign up
-        await _authService.signUpWithEmailAndPassword(
+        await authService.signUpWithEmailAndPassword(
           email: _emailController.text,
           password: _passwordController.text,
         );
