@@ -278,25 +278,25 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             child: Icon(icon, color: iconColor, size: 18),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
+              Text(
+                label,
             style: TextStyle(
               fontSize: 10,
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+                  fontWeight: FontWeight.w500,
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-          ),
+              ),
           const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              value,
+                value,
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
             ),
