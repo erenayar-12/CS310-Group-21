@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '/screens/profile/widgets.dart';
 
 class ProfileView extends StatefulWidget {
-  final ThemeService? themeService;
-  
-  const ProfileView({this.themeService, super.key});
+  const ProfileView({super.key});
 
   @override
   State<ProfileView> createState() => _ProfileViewState();
@@ -15,7 +14,6 @@ class ProfileView extends StatefulWidget {
 class _ProfileViewState extends State<ProfileView> {
   // --- STATE VARIABLES ---
   final _formKey = GlobalKey<FormState>();
-  final _authService = AuthService();
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -28,12 +26,15 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     super.initState();
-    // Initialize email from Firebase user
-    final user = _authService.currentUser;
-    if (user != null) {
-      _emailController.text = user.email ?? '';
-      _nameController.text = user.displayName ?? user.email?.split('@')[0] ?? 'User';
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize email from Firebase user
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = authService.currentUser;
+      if (user != null) {
+        _emailController.text = user.email ?? '';
+        _nameController.text = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+      }
+    });
   }
 
   @override
@@ -71,8 +72,9 @@ class _ProfileViewState extends State<ProfileView> {
       _isLoggingOut = true;
     });
 
+    final authService = Provider.of<AuthService>(context, listen: false);
     try {
-      await _authService.signOut();
+      await authService.signOut();
       // Navigation will be handled by auth state listener in app.dart
       // No need to manually navigate here
     } catch (e) {
@@ -312,14 +314,16 @@ class _ProfileViewState extends State<ProfileView> {
                             children: [
                               Icon(Icons.wb_sunny_outlined,
                                   size: 20, color: theme.hintColor),
-                              Switch.adaptive(
-                                value: widget.themeService?.isDarkMode ?? false,
-                                onChanged: (val) {
-                                  if (widget.themeService != null) {
-                                    widget.themeService!.setThemeMode(
-                                      val ? ThemeMode.dark : ThemeMode.light,
-                                    );
-                                  }
+                              Consumer<ThemeService>(
+                                builder: (context, themeService, _) {
+                                  return Switch.adaptive(
+                                    value: themeService.themeMode == ThemeMode.dark,
+                                    onChanged: (val) {
+                                      themeService.setThemeMode(
+                                        val ? ThemeMode.dark : ThemeMode.light,
+                                      );
+                                    },
+                                  );
                                 },
                               ),
                               Icon(Icons.nightlight_round,
