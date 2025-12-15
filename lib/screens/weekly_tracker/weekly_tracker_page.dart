@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
-import '../../services/auth_service.dart';
 
 class WeeklyTrackerPage extends StatefulWidget {
   const WeeklyTrackerPage({super.key});
@@ -12,11 +12,47 @@ class WeeklyTrackerPage extends StatefulWidget {
 
 class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
   int weekOffset = 0;
-  final FirestoreService _firestoreService = FirestoreService();
+
+  DateTime _getWeekStart(DateTime date) {
+    final weekday = date.weekday;
+    final daysFromSunday = weekday % 7;
+    final weekStart = date.subtract(Duration(days: daysFromSunday));
+    return DateTime(weekStart.year, weekStart.month, weekStart.day);
+  }
+
+  List<DateTime> _getWeekDays(int offset) {
+    final now = DateTime.now();
+    final weekStart = _getWeekStart(now.add(Duration(days: offset * 7)));
+    return List.generate(7, (i) => weekStart.add(Duration(days: i)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final firestoreService = Provider.of<FirestoreService>(context);
+    final weekDays = _getWeekDays(weekOffset);
+    final today = DateTime.now();
+    final todayDateOnly = DateTime(today.year, today.month, today.day);
+
+    final start = weekDays.first;
+    final end = weekDays.last;
+    final monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    final startStr = '${monthNames[start.month - 1]} ${start.day}';
+    final endStr = '${monthNames[end.month - 1]} ${end.day}, ${end.year}';
+
     final gradient = LinearGradient(
       colors: [
         theme.colorScheme.primary,
@@ -25,18 +61,17 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            //HEADER (gradient)
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: gradient,
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20),
                 ),
@@ -69,7 +104,6 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             const SizedBox(height: 12),
 
-            //DATE RANGE CARD
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Card(
@@ -89,38 +123,13 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Builder(
-                              builder: (context) {
-                                final weekDays = _getWeekDays(weekOffset);
-                                final start = weekDays.first;
-                                final end = weekDays.last;
-                                final monthNames = [
-                                  'January',
-                                  'February',
-                                  'March',
-                                  'April',
-                                  'May',
-                                  'June',
-                                  'July',
-                                  'August',
-                                  'September',
-                                  'October',
-                                  'November',
-                                  'December'
-                                ];
-                                final startStr =
-                                    '${monthNames[start.month - 1]} ${start.day}';
-                                final endStr =
-                                    '${monthNames[end.month - 1]} ${end.day}, ${end.year}';
-                                return Text(
-                                  '$startStr - $endStr',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                );
-                              },
+                            Text(
+                              '$startStr - $endStr',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             TextButton(
@@ -159,7 +168,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
 
             Expanded(
               child: StreamBuilder<List<Habit>>(
-                stream: _firestoreService.getHabitsStream(),
+                stream: firestoreService.getHabitsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -179,10 +188,10 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                         padding: const EdgeInsets.all(32.0),
                         child: Text(
                           'Weekly tracker will show your habits here.\nCreate habits to see them tracked weekly.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     );
@@ -192,7 +201,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: habits.length,
                     itemBuilder: (context, index) {
-                      return _buildHabitCard(habits[index]);
+                      return _buildHabitCard(habits[index], weekDays, todayDateOnly, firestoreService);
                     },
                   );
                 },
@@ -204,28 +213,12 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
     );
   }
 
-  DateTime _getWeekStart(DateTime date) {
-    final weekday = date.weekday;
-    final daysFromSunday = weekday % 7;
-    final weekStart = date.subtract(Duration(days: daysFromSunday));
-    return DateTime(weekStart.year, weekStart.month, weekStart.day);
-  }
-
-  List<DateTime> _getWeekDays(int offset) {
-    final now = DateTime.now();
-    final weekStart = _getWeekStart(now.add(Duration(days: offset * 7)));
-    return List.generate(7, (i) => weekStart.add(Duration(days: i)));
-  }
-
-  Widget _buildHabitCard(Habit habit) {
+  Widget _buildHabitCard(Habit habit, List<DateTime> weekDays, DateTime todayDateOnly, FirestoreService firestoreService) {
     final theme = Theme.of(context);
-    final weekDays = _getWeekDays(weekOffset);
-    final today = DateTime.now();
-    final todayDateOnly = DateTime(today.year, today.month, today.day);
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: habit.id != null
-          ? _firestoreService.getHabitCompletionsStream(habit.id!)
+          ? firestoreService.getHabitCompletionsStream(habit.id!)
           : Stream.value([]),
       builder: (context, completionsSnapshot) {
         final completions = completionsSnapshot.data ?? [];
@@ -307,33 +300,33 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                       Color textColor;
                       Widget bottomWidget;
 
-                  if (isFuture) {
-                    bgColor = theme.colorScheme.surfaceContainerHighest;
-                    borderColor = theme.colorScheme.outlineVariant;
-                    textColor = theme.colorScheme.onSurfaceVariant.withOpacity(0.5);
-                    bottomWidget = const SizedBox(height: 14);
-                  } else if (isCompleted) {
-                    bgColor = theme.colorScheme.primary;
-                    borderColor = theme.colorScheme.primary;
-                    textColor = theme.colorScheme.onPrimary;
-                    bottomWidget = Icon(
-                      Icons.check,
-                      size: 14,
-                      color: theme.colorScheme.onPrimary,
-                    );
-                  } else {
-                    bgColor = theme.colorScheme.surface;
-                    borderColor = theme.colorScheme.outlineVariant;
-                    textColor = theme.colorScheme.onSurface;
-                    bottomWidget = Text(
-                      'X',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    );
-                  }
+                      if (isFuture) {
+                        bgColor = theme.colorScheme.surfaceContainerHighest;
+                        borderColor = theme.colorScheme.outlineVariant;
+                        textColor = theme.colorScheme.onSurfaceVariant.withOpacity(0.5);
+                        bottomWidget = const SizedBox(height: 14);
+                      } else if (isCompleted) {
+                        bgColor = theme.colorScheme.primary;
+                        borderColor = theme.colorScheme.primary;
+                        textColor = theme.colorScheme.onPrimary;
+                        bottomWidget = Icon(
+                          Icons.check,
+                          size: 14,
+                          color: theme.colorScheme.onPrimary,
+                        );
+                      } else {
+                        bgColor = theme.colorScheme.surface;
+                        borderColor = theme.colorScheme.outlineVariant;
+                        textColor = theme.colorScheme.onSurface;
+                        bottomWidget = Text(
+                          'X',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }
 
                       return Container(
                         width: 52,
@@ -378,12 +371,12 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                Text(
-                  'This Week:',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+                    Text(
+                      'This Week:',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     Text(
                       '$completedCount / 7 days',
                       style: const TextStyle(
