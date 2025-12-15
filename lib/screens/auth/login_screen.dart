@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Navigation will be handled by auth state listener in app.dart
       // No need to manually navigate here
     } catch (e) {
-      if (!mounted) return;
+    if (!mounted) return;
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
