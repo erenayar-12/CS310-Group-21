@@ -6,7 +6,6 @@ import 'today_progress_card.dart';
 import 'today_habits_header.dart';
 import 'habit_card.dart';
 import 'achievements_stats.dart';
-import 'friends_section.dart';
 
 class HabitListView extends StatelessWidget {
   const HabitListView({
@@ -15,6 +14,8 @@ class HabitListView extends StatelessWidget {
     required this.isLoading,
     required this.onHabitSelected,
     required this.onHoverChanged,
+    this.onDelete,
+    this.onComplete,
     super.key,
   });
 
@@ -23,6 +24,8 @@ class HabitListView extends StatelessWidget {
   final bool isLoading;
   final ValueChanged<Habit> onHabitSelected;
   final ValueChanged<int?> onHoverChanged;
+  final ValueChanged<Habit>? onDelete;
+  final ValueChanged<Habit>? onComplete;
 
   int get _completedToday =>
       habits.where((h) => h.progress >= 1.0).length; // simple rule
@@ -73,13 +76,13 @@ class HabitListView extends StatelessWidget {
                     isHovered: isHovered,
                     onHabitSelected: onHabitSelected,
                     onHoverChanged: onHoverChanged,
+                    onDelete: onDelete,
+                    onComplete: onComplete,
                   );
                 },
               ),
             const SizedBox(height: 24),
             const AchievementsStats(),
-            const SizedBox(height: 24),
-            const FriendsSection(),
           ],
         ),
       ),

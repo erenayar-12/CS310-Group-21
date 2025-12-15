@@ -5,12 +5,10 @@ import '../../../data/habit.dart';
 class AddHabitView extends StatefulWidget {
   const AddHabitView({
     required this.onCreateHabit,
-    required this.onSeedDummyHabits,
     super.key,
   });
 
   final Future<void> Function(Habit) onCreateHabit;
-  final Future<void> Function() onSeedDummyHabits;
 
   @override
   State<AddHabitView> createState() => _AddHabitViewState();
@@ -28,7 +26,6 @@ class _AddHabitViewState extends State<AddHabitView> {
   TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
   bool _makePublic = true;
   bool _isSubmitting = false;
-  bool _isSeeding = false;
 
   static const List<String> _emojiOptions = [
     '💪',
@@ -121,25 +118,6 @@ class _AddHabitViewState extends State<AddHabitView> {
     }
   }
 
-  Future<void> _seedDummyHabits() async {
-    if (_isSeeding) {
-      return;
-    }
-
-    setState(() {
-      _isSeeding = true;
-    });
-
-    try {
-      await widget.onSeedDummyHabits();
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSeeding = false;
-        });
-      }
-    }
-  }
 
   void _resetForm() {
     _formKey.currentState?.reset();
@@ -522,21 +500,6 @@ class _AddHabitViewState extends State<AddHabitView> {
                     ),
                   ),
 
-                  // Load Dummy Habits Button (hidden in card but kept for functionality)
-                  if (_isSeeding) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: null,
-                        child: const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

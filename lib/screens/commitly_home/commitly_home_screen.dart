@@ -2,18 +2,18 @@ import 'package:commitly/screens/weekly_tracker/weekly_tracker_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/habit.dart';
-import '../../data/habit_database.dart';
+import '../../services/firestore_service.dart';
+import '../../services/theme_service.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
-// import 'widgets/settings_view.dart';  -> this was placeholder for profile right?
 import '../commitly_leaderboard/leaderboard_screen.dart';
 import '../../screens/profile/profile_view.dart';
 import '../groups/groups_screen.dart';
 
-const bool kUseMockHabits = true; // <-- turn OFF DB, use fake data for UI
-
 class CommitlyHomeScreen extends StatefulWidget {
-  const CommitlyHomeScreen({super.key});
+  final ThemeService? themeService;
+  
+  const CommitlyHomeScreen({this.themeService, super.key});
 
   @override
   State<CommitlyHomeScreen> createState() => _CommitlyHomeScreenState();
@@ -21,121 +21,39 @@ class CommitlyHomeScreen extends StatefulWidget {
 
 class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
   int _currentIndex = 0;
-  bool _isLoading = true;
-  final List<Habit> _habits = [];
   int? _hoveredHabitIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHabits();
-  }
-
-  Future<void> _loadHabits() async {
-    if (kUseMockHabits) {
-      // Habits for just placeholder
-      final mockHabits = <Habit>[
-        Habit(
-          emoji: '🏋️‍♂️',
-          name: 'Morning Exercise',
-          description: '30 minutes of cardio',
-          frequency: HabitFrequency.daily,
-          notifyBeforeHour: true,
-          progress: 0.0,
-          streak: 4,
-        ),
-        Habit(
-          emoji: '📚',
-          name: 'Read a Book',
-          description: 'Read for at least 20 minutes',
-          frequency: HabitFrequency.daily,
-          notifyBeforeHour: true,
-          progress: 0.3,
-          streak: 2,
-        ),
-        Habit(
-          emoji: '💧',
-          name: 'Drink Water',
-          description: '8 glasses throughout the day',
-          frequency: HabitFrequency.daily,
-          notifyBeforeHour: true,
-          progress: 0.6,
-          streak: 5,
-        ),
-      ];
-
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-
-      if (!mounted) return;
-      setState(() {
-        _habits
-          ..clear()
-          ..addAll(mockHabits);
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // ORIGINAL DB VERSION (kept for later, but not used while kUseMockHabits=true)
-    final habits = await HabitDatabase.instance.fetchHabits();
-    if (!mounted) return;
-
-    habits.sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
-
-    setState(() {
-      _habits
-        ..clear()
-        ..addAll(habits);
-      _isLoading = false;
-    });
-  }
+  final FirestoreService _firestoreService = FirestoreService();
 
   Future<void> _handleHabitCreated(Habit habit) async {
-    if (kUseMockHabits) {
-      setState(() {
-        _habits.add(habit);
-      });
-      return;
-    }
-
-    await HabitDatabase.instance.createHabit(habit);
-    await _loadHabits();
-  }
-
-  Future<void> _handleSeedDummyHabits() async {
-    if (kUseMockHabits) {
-      await _loadHabits(); // just reload mock habits
-      return;
-    }
-
-    await HabitDatabase.instance.seedDummyHabits();
-    await _loadHabits();
-  }
-
-  Future<void> _handleDeleteSelectedHabits(List<int> habitIds) async {
-    if (habitIds.isEmpty) return;
-
-    if (kUseMockHabits) {
-      setState(() {
-        _habits.removeWhere((h) => h.id != null && habitIds.contains(h.id));
-      });
-      return;
-    }
-
-    final deletedCount = await HabitDatabase.instance.deleteHabits(habitIds);
-    await _loadHabits();
-
-    if (!mounted) return;
-
-    if (deletedCount > 0) {
-      final plural = deletedCount == 1 ? '' : 's';
+    try {
+      await _firestoreService.createHabit(habit);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deleted $deletedCount habit$plural.')),
+        const SnackBar(content: Text('Habit created successfully!')),
       );
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No habits were deleted.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create habit: $e')),
+      );
+    }
+  }
+
+
+  Future<void> _handleDeleteHabit(Habit habit) async {
+    if (habit.id == null) return;
+
+    try {
+      await _firestoreService.deleteHabit(habit.id!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${habit.name}" deleted successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete habit: $e')),
+      );
     }
   }
 
@@ -161,42 +79,45 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     );
 
     if (!mounted || didComplete != true) return;
-    if (habit.id == null && !kUseMockHabits) return;
 
-    Habit updatedHabit = habit;
-
-    if (kUseMockHabits) {
-      // If already completed today, prevent duplicate streak + progress
-      if (habit.progress >= 1.0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"${habit.name}" is already completed today.'),
-          ),
-        );
-        return;
-      }
-
-      // Mark as fully completed (1.0 means done)
-      updatedHabit = habit.copyWith(progress: 1.0, streak: habit.streak + 1);
-
-      setState(() {
-        final idx = _habits.indexOf(habit);
-        if (idx != -1) _habits[idx] = updatedHabit;
-      });
-    } else {
-      updatedHabit = await HabitDatabase.instance.completeHabit(habit);
-      await _loadHabits();
+    if (habit.progress >= 1.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${habit.name}" is already completed today.'),
+        ),
+      );
+      return;
     }
 
-    if (!mounted) return;
+    try {
+      final updatedHabit = habit.copyWith(
+        progress: 1.0,
+        streak: habit.streak + 1,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Great job! "${habit.name}" streak is now ${updatedHabit.streak}.',
+      if (habit.id != null) {
+        await _firestoreService.updateHabit(habit.id!, updatedHabit);
+        await _firestoreService.createHabitCompletion(
+          habitId: habit.id!,
+          completedAt: DateTime.now(),
+        );
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Great job! "${habit.name}" streak is now ${updatedHabit.streak}.',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update habit: $e')),
+      );
+    }
   }
 
   void _onHoverChanged(int? index) {
@@ -217,20 +138,52 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          HabitListView(
-            habits: _habits,
-            hoveredHabitIndex: _hoveredHabitIndex,
-            isLoading: _isLoading,
-            onHabitSelected: _promptHabitCompletion,
-            onHoverChanged: _onHoverChanged,
+          StreamBuilder<List<Habit>>(
+            stream: _firestoreService.getHabitsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return HabitListView(
+                  habits: [],
+                  hoveredHabitIndex: _hoveredHabitIndex,
+                  isLoading: true,
+                  onHabitSelected: _promptHabitCompletion,
+                  onHoverChanged: _onHoverChanged,
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Error: ${snapshot.error}'),
+                    ],
+                  ),
+                );
+              }
+
+              final habits = snapshot.data ?? [];
+              habits.sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
+
+              return HabitListView(
+                habits: habits,
+                hoveredHabitIndex: _hoveredHabitIndex,
+                isLoading: false,
+                onHabitSelected: _promptHabitCompletion,
+                onHoverChanged: _onHoverChanged,
+                onDelete: _handleDeleteHabit,
+                onComplete: _promptHabitCompletion,
+              );
+            },
           ),
           const WeeklyTrackerPage(),
           AddHabitView(
             onCreateHabit: _handleHabitCreated,
-            onSeedDummyHabits: _handleSeedDummyHabits,
           ),
           const GroupsScreen(),
-          const ProfileView(),
+          ProfileView(themeService: widget.themeService),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(

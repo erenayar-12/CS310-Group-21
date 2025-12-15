@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../data/habit.dart';
 
-class HabitCard extends StatelessWidget {
+class HabitCard extends StatefulWidget {
   const HabitCard({
     required this.habit,
     required this.index,
     required this.isHovered,
     required this.onHabitSelected,
     required this.onHoverChanged,
+    this.onDelete,
+    this.onComplete,
     super.key,
   });
 
@@ -16,6 +18,15 @@ class HabitCard extends StatelessWidget {
   final bool isHovered;
   final ValueChanged<Habit> onHabitSelected;
   final ValueChanged<int?> onHoverChanged;
+  final ValueChanged<Habit>? onDelete;
+  final ValueChanged<Habit>? onComplete;
+
+  @override
+  State<HabitCard> createState() => _HabitCardState();
+}
+
+class _HabitCardState extends State<HabitCard> {
+  bool _isDeleteHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +34,8 @@ class HabitCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return MouseRegion(
-      onEnter: (_) => onHoverChanged(index),
-      onExit: (_) => onHoverChanged(null),
+      onEnter: (_) => widget.onHoverChanged(widget.index),
+      onExit: (_) => widget.onHoverChanged(null),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
@@ -33,9 +44,9 @@ class HabitCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isHovered ? 0.3 : 0.18),
-              blurRadius: isHovered ? 14 : 10,
-              offset: Offset(0, isHovered ? 8 : 4),
+              color: Colors.black.withOpacity(widget.isHovered ? 0.3 : 0.18),
+              blurRadius: widget.isHovered ? 14 : 10,
+              offset: Offset(0, widget.isHovered ? 8 : 4),
             ),
           ],
         ),
@@ -44,7 +55,7 @@ class HabitCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => onHabitSelected(habit),
+              onTap: () => widget.onHabitSelected(widget.habit),
               child: Padding(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -60,7 +71,7 @@ class HabitCard extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        habit.emoji ?? '🗒️',
+                        widget.habit.emoji ?? '🗒️',
                         style: const TextStyle(fontSize: 24),
                       ),
                     ),
@@ -69,32 +80,70 @@ class HabitCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            habit.name,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.habit.name,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              if (widget.onDelete != null && widget.habit.id != null)
+                                MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  onEnter: (_) => setState(() => _isDeleteHovered = true),
+                                  onExit: (_) => setState(() => _isDeleteHovered = false),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: _isDeleteHovered
+                                          ? Colors.red.shade100
+                                          : Colors.transparent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _isDeleteHovered
+                                            ? Colors.red.shade400
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 20),
+                                      color: _isDeleteHovered
+                                          ? Colors.red.shade700
+                                          : Colors.red.shade400,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () => _showDeleteDialog(context),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            habit.frequencyLabel,
+                            widget.habit.frequencyLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            habit.streakLabel,
+                            widget.habit.streakLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.black87,
                             ),
                           ),
-                          if (habit.description != null &&
-                              habit.description!.isNotEmpty) ...[
+                          if (widget.habit.description != null &&
+                              widget.habit.description!.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
-                              habit.description!,
+                              widget.habit.description!,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: Colors.black87,
                               ),
@@ -104,7 +153,7 @@ class HabitCard extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: LinearProgressIndicator(
-                              value: habit.progress.clamp(0.0, 1.0),
+                              value: widget.habit.progress.clamp(0.0, 1.0),
                               minHeight: 8,
                               backgroundColor:
                               const Color(0xFFE0E0F5), // light track
@@ -113,13 +162,35 @@ class HabitCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            habit.remainingLabel,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.black87,
+                          const SizedBox(height: 8),
+                          if (widget.onComplete != null && widget.habit.id != null)
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: widget.habit.progress >= 1.0
+                                    ? null
+                                    : () => widget.onComplete?.call(widget.habit),
+                                icon: Icon(
+                                  widget.habit.progress >= 1.0
+                                      ? Icons.check_circle
+                                      : Icons.check,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  widget.habit.progress >= 1.0
+                                      ? 'Done'
+                                      : 'Done',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: widget.habit.progress >= 1.0
+                                      ? Colors.green
+                                      : colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -129,6 +200,32 @@ class HabitCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Habit'),
+        content: Text('Are you sure you want to delete "${widget.habit.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              widget.onDelete?.call(widget.habit);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
