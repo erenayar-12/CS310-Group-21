@@ -1,173 +1,189 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
+import 'package:provider/provider.dart';
 
 import '../../data/habit.dart';
-import 'package:provider/provider.dart';
 import '../../services/firestore_service.dart';
 
-class StatisticsScreen extends StatefulWidget {
+class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
-
-  @override
-  State<StatisticsScreen> createState() => _StatisticsScreenState();
-}
-
-class _StatisticsScreenState extends State<StatisticsScreen> {
-
-  // Use simpler data structures that work with current database
-  List<double> _dailyXP = List.filled(30, 0.0); // Last 30 days - will be calculated
-  List<double> _weeklyCompletion = [0, 0, 0, 0, 0]; // Fri, Sat, Sun, Tue, Thu
-
-  @override
-
-  void _calculateDailyXP(List<Habit> habits) {
-    // Since we don't have historical data, distribute XP across last 30 days
-    // based on current streaks
-    final totalXP = habits.fold(0, (sum, habit) => sum + habit.streak * 10);
-
-    if (totalXP > 0) {
-      // Distribute XP across last 30 days (more recent = more XP)
-      final now = DateTime.now();
-      for (int i = 0; i < 30; i++) {
-        final daysAgo = 29 - i;
-        // More recent days get more XP (simple distribution)
-        final weight = (30 - daysAgo) / 30.0;
-        _dailyXP[i] = (totalXP * weight / 30.0).roundToDouble();
-      }
-    }
-  }
-
-  void _calculateWeeklyCompletion(List<Habit> habits) {
-    // Calculate completion rate based on habits that are "on track"
-    // (progress < 0.3 means they're being completed regularly)
-    final onTrackHabits = habits.where((h) => h.progress < 0.3).length;
-    final completionRate = habits.isEmpty
-        ? 0.0
-        : (onTrackHabits / habits.length) * 4.0; // Scale to 0-4 for graph
-
-    // Distribute across week days (simplified)
-    _weeklyCompletion = [
-      completionRate * 0.8, // Fri
-      completionRate * 0.6, // Sat
-      completionRate * 0.9, // Sun
-      completionRate * 1.0, // Tue
-      completionRate * 0.7, // Thu
-    ];
-  }
-
-  // Update Total XP calculation to use actual completions
-  int get _totalXP {
-    return _dailyXP.fold(0, (sum, xp) => sum + xp.toInt());
-  }
-
-  // Update to show real data in graphs
-  List<double> get _dailyXPList {
-    final now = DateTime.now();
-    final List<double> xpList = [];
-    for (int i = 29; i >= 0; i--) {
-      final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
-      xpList.add((_dailyXP[i] ?? 0).toDouble());
-    }
-    return xpList;
-  }
-
-  // Calculate statistics
-  int _totalCompletions(List<Habit> habits) =>
-      habits.fold(0, (sum, habit) => sum + habit.streak);
-
-  int _activeHabits(List<Habit> habits) => habits.length;
-
-  double _avgRate(List<Habit> habits) {
-    if (habits.isEmpty) return 0.0;
-    final onTrackCount = habits.where((h) => h.progress < 0.3).length;
-    return (onTrackCount / habits.length) * 100;
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: StreamBuilder<List<Habit>>(
           stream: context.read<FirestoreService>().getHabitsStream(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              );
+          builder: (context, habitsSnap) {
+            if (habitsSnap.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+            }
+            if (habitsSnap.hasError) {
+              return _ErrorView(error: habitsSnap.error.toString());
             }
 
-            final habits = snapshot.data ?? [];
+            final habits = habitsSnap.data ?? [];
+            final activeHabitsCount = habits.length;
 
-            // Recompute graph data from live habits
-            _dailyXP = List.filled(30, 0.0);
-            _weeklyCompletion = [0, 0, 0, 0, 0];
-            _calculateDailyXP(habits);
-            _calculateWeeklyCompletion(habits);
+            final Map<String, String> habitNameMap = {};
+            for (final h in habits) {
+              if (h.id != null) {
+                habitNameMap[h.id!] = h.name ?? 'Unnamed Habit';
+              }
+            }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildStatisticsGridLive(habits),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildWeeklyCompletionGraph(),
-                  const SizedBox(height: 16),
-                  _buildXPOver30Days(),
-                  const SizedBox(height: 16),
-                  _buildHabitCompletions(),
-                  const SizedBox(height: 16),
-                  _buildCompletionDetails(habits),
-                  const SizedBox(height: 80),
-                ],
-              ),
+            return StreamBuilder<Map<String, dynamic>>(
+              stream: context.read<FirestoreService>().getUserStatsStream(),
+              builder: (context, statsSnap) {
+                final stats = statsSnap.data ?? {};
+                final totalXP = (stats['totalXp'] as num?)?.toInt() ?? 0;
+                final totalCompletions = (stats['totalCompletions'] as num?)?.toInt() ?? 0;
+
+                return StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: context.read<FirestoreService>().getUserCompletionsStream(),
+                  builder: (context, compSnap) {
+
+                    if (compSnap.hasError) {
+                      debugPrint("Firestore Query Error: ${compSnap.error}");
+                      return const Center(child: Text("Loading stats...\n(If this persists, check debug console)", textAlign: TextAlign.center));
+                    }
+
+                    if (compSnap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final completions = compSnap.data ?? [];
+
+                    // Calculate stats for the GridView
+                    final now = DateTime.now();
+                    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+                    final weekStart = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+
+                    final weeklyCompletionsList = completions.where((c) {
+                      final dt = c['completedAt'];
+                      if (dt is! DateTime) return false;
+                      return dt.isAfter(weekStart) && dt.isBefore(todayEnd);
+                    }).toList();
+
+                    final activeHabitIds = habits
+                        .where((h) => h.id != null)
+                        .map((h) => h.id!)
+                        .toSet();
+
+                    final uniqueActiveHabitsCompletedThisWeek = weeklyCompletionsList
+                        .map((c) => c['habitId'] as String?)
+                        .where((id) => id != null && activeHabitIds.contains(id))
+                        .toSet();
+
+                    final avgRate = activeHabitsCount == 0
+                        ? 0
+                        : ((uniqueActiveHabitsCompletedThisWeek.length / activeHabitsCount) * 100).round();
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 32),
+                      child: Column(
+                        children: [
+                          const _Header(),
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: GridView.count(
+                              crossAxisCount: 2,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.55,
+                              children: [
+                                _StatCard(
+                                  icon: Icons.star,
+                                  label: 'Total XP',
+                                  value: '$totalXP',
+                                  color: Colors.purple,
+                                ),
+                                _StatCard(
+                                  icon: Icons.check_circle,
+                                  label: 'Completions',
+                                  value: '$totalCompletions',
+                                  color: Colors.green,
+                                ),
+                                _StatCard(
+                                  icon: Icons.calendar_today,
+                                  label: 'Active Habits',
+                                  value: '$activeHabitsCount',
+                                  color: Colors.blue,
+                                ),
+                                _StatCard(
+                                  icon: Icons.trending_up,
+                                  label: 'Daily Consistency', // Renamed from Avg Rate for clarity
+                                  value: '$avgRate%',
+                                  color: Colors.orange,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          _WeeklyCompletionCard(
+                            completions: completions,
+                            activeHabitsCount: activeHabitsCount,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          _HabitBreakdownList(
+                            completions: completions,
+                            habitNameMap: habitNameMap,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             );
           },
         ),
       ),
     );
   }
+}
 
-  Widget _buildHeader() {
+class _ErrorView extends StatelessWidget {
+  final String error;
+  const _ErrorView({required this.error});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text('Something went wrong.\n$error', textAlign: TextAlign.center),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.fromLTRB(12, 24, 16, 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.shade600,
-            Colors.pink.shade400,
-          ],
+          colors: [Colors.purple.shade600, Colors.pink.shade400],
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(8, 24, 16, 24),
       child: Row(
         children: [
           IconButton(
-            onPressed: () {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
-            },
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.bar_chart, color: Colors.white, size: 24),
-          ),
+          const Icon(Icons.bar_chart, color: Colors.white, size: 28),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
@@ -176,19 +192,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 Text(
                   'Statistics',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 4),
-                Text(
-                  'Your habit tracking insights',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
+                Text('Your habit insights',
+                    style: TextStyle(color: Colors.white70)),
               ],
             ),
           ),
@@ -196,650 +206,278 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildStatisticsGridLive(List<Habit> habits) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.55,
-      children: [
-        _buildStatCard(
-          icon: Icons.shield,
-          iconColor: Colors.purple,
-          label: 'Total XP',
-          value: '${_totalXP}',
-        ),
-        _buildStatCard(
-          icon: Icons.trending_up,
-          iconColor: Colors.green,
-          label: 'Completions',
-          value: '${_totalCompletions(habits)}',
-        ),
-        _buildStatCard(
-          icon: Icons.calendar_today,
-          iconColor: Colors.purple,
-          label: 'Active Habits',
-          value: '${_activeHabits(habits)}',
-        ),
-        _buildStatCard(
-          icon: Icons.bar_chart,
-          iconColor: Colors.orange,
-          label: 'Avg Rate',
-          value: '${_avgRate(habits).toStringAsFixed(0)}%',
-        ),
-      ],
-    );
-  }
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+            color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
       ),
-      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(height: 6),
-              Text(
-                label,
-            style: TextStyle(
-              fontSize: 10,
-              color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-              ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-                value,
-              style: TextStyle(
-                fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
+          Icon(icon, color: color, size: 20),
+          const Spacer(),
+          Text(label, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildWeeklyCompletionGraph() {
+// UPDATED WIDGET: Replaces the bar with 7-Day Bubbles
+class _WeeklyCompletionCard extends StatelessWidget {
+  final List<Map<String, dynamic>> completions;
+  final int activeHabitsCount;
+
+  const _WeeklyCompletionCard({
+    required this.completions,
+    required this.activeHabitsCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final now = DateTime.now();
+
+    // Helper: Calculate completion % for a specific date
+    double getDailyCompletionPercent(DateTime date) {
+      if (activeHabitsCount == 0) return 0.0;
+
+      // Filter completions for this specific date (Year/Month/Day match)
+      final dailyComps = completions.where((c) {
+        final dt = c['completedAt'];
+        if (dt is! DateTime) return false;
+        return dt.year == date.year &&
+            dt.month == date.month &&
+            dt.day == date.day;
+      }).length;
+
+      // Cap at 1.0 (100%)
+      return (dailyComps / activeHabitsCount).clamp(0.0, 1.0);
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Weekly Completion Rate',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
-            child: _WeeklyCompletionChart(
-              data: _weeklyCompletion,
-            ),
-          ),
-          const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+              const Text(
+                'Consistency Tracker',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(width: 4),
-              Text(
-                'Completion %',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
+              // Optional: A little badge for "Today"
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Today',
+                  style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+
+          LayoutBuilder(
+              builder: (context, constraints) {
+                final double availableWidth = constraints.maxWidth;
+                final double bubbleSize = (availableWidth / 7) - 6; // Subtract spacing
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(7, (index) {
+                    final date = now.subtract(Duration(days: 6 - index));
+                    final percent = getDailyCompletionPercent(date);
+
+                    final weekdayLetter = ['M','T','W','T','F','S','S'][date.weekday - 1];
+                    final isToday = (index == 6);
+
+                    final isPerfect = percent >= 1.0;
+                    final isPartial = percent > 0.0 && percent < 1.0;
+
+                    return Column(
+                      children: [
+                        Container(
+                          width: bubbleSize.clamp(28.0, 38.0),
+                          height: bubbleSize.clamp(28.0, 38.0),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isPerfect
+                                ? theme.colorScheme.primary
+                                : isPartial
+                                ? theme.colorScheme.primary.withOpacity(0.4)
+                                : theme.colorScheme.surfaceDim,
+                            border: isToday
+                                ? Border.all(color: theme.colorScheme.primary, width: 2)
+                                : null,
+                          ),
+                          child: Center(
+                            child: isPerfect
+                                ? const Icon(Icons.check, size: 18, color: Colors.white)
+                                : Text(
+                              isPartial ? '${(percent * 100).toInt()}' : '', // Show number if partial
+                              style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          weekdayLetter,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            color: isToday ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                );
+              }
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildXPOver30Days() {
+class _HabitBreakdownList extends StatelessWidget {
+  final List<Map<String, dynamic>> completions;
+  final Map<String, String> habitNameMap;
+
+  const _HabitBreakdownList({
+    required this.completions,
+    required this.habitNameMap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Grouping Logic
+    final Map<String, int> counts = {};
+
+    for (final c in completions) {
+      final habitId = c['habitId'] as String?;
+      final savedName = c['habitName'] as String?;
+
+      String displayName;
+      if (savedName != null && savedName.isNotEmpty) {
+        displayName = savedName;
+      } else if (habitId != null && habitNameMap.containsKey(habitId)) {
+        displayName = habitNameMap[habitId]!;
+      } else {
+        displayName = "Deleted Habit";
+      }
+
+      counts[displayName] = (counts[displayName] ?? 0) + 1;
+    }
+
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '→ Daily XP',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
-            child: _DailyXPChart(data: _dailyXPList),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHabitCompletions() {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+          const Text(
             'Habit Completions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 16),
-          // Empty state - can be filled with actual data later
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompletionDetails(List<Habit> habits) {
-    final theme = Theme.of(context);
-    // Get habits with completion counts
-    final habitDetails = habits.map((habit) {
-      return _HabitDetail(
-        name: habit.name,
-        color: _getHabitColor(habit.emoji ?? ''),
-        count: habit.streak,
-      );
-    }).toList();
-
-    // Add dummy habits if needed for demo
-    if (habitDetails.isEmpty) {
-      habitDetails.addAll([
-        _HabitDetail(name: 'Morning Exercise', color: Colors.blue.shade400, count: 0),
-        _HabitDetail(name: 'Read a Book', color: Colors.purple.shade400, count: 0),
-        _HabitDetail(name: 'Drink Water', color: Colors.green.shade400, count: 0),
-      ]);
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Completion Details',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...habitDetails.map((detail) => _buildHabitDetailRow(detail)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHabitDetailRow(_HabitDetail detail) {
-    final theme = Theme.of(context);
-    final displayName = detail.name.length > 20
-        ? '${detail.name.substring(0, 20)}...'
-        : detail.name;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: detail.color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: detail.color.withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              displayName,
-              style: TextStyle(
-                fontSize: 14,
-                color: theme.colorScheme.onSurface,
+          const SizedBox(height: 12),
+          if (entries.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No completions found'),
               ),
-            ),
-          ),
-          Text(
-            '${detail.count}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              separatorBuilder: (_, __) => const Divider(height: 16),
+              itemBuilder: (context, index) {
+                final e = entries[index];
+                final isDeleted = e.key.startsWith("Deleted");
 
-  Color _getHabitColor(String emoji) {
-    // Map emojis to colors, or use default (lighter colors for dark theme)
-    if (emoji.contains('🏃') || emoji.contains('💪')) return Colors.blue.shade400;
-    if (emoji.contains('📚') || emoji.contains('📖')) return Colors.purple.shade400;
-    if (emoji.contains('💧') || emoji.contains('🥤')) return Colors.green.shade400;
-    return Colors.grey.shade400;
-  }
-}
-
-// Helper class for habit details
-class _HabitDetail {
-  final String name;
-  final Color color;
-  final int count;
-
-  _HabitDetail({
-    required this.name,
-    required this.color,
-    required this.count,
-  });
-}
-
-// Weekly Completion Chart Widget
-class _WeeklyCompletionChart extends StatelessWidget {
-  final List<double> data;
-  final List<String> labels = ['Fri', 'Sat', 'Sun', 'Tue', 'Thu'];
-
-  _WeeklyCompletionChart({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final maxValue = data.isEmpty ? 4.0 : data.reduce(math.max).clamp(1.0, 4.0);
-    final chartHeight = 160.0;
-    final chartWidth = MediaQuery.of(context).size.width - 64;
-
-    return Column(
-      children: [
-        // Y-axis labels
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 30,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(5, (index) {
-                  final value = maxValue - (index * (maxValue / 4));
-                  return Text(
-                    value.toStringAsFixed(0),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: theme.colorScheme.onSurfaceVariant,
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        e.key,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: isDeleted ? theme.colorScheme.onSurface.withOpacity(0.6) : null,
+                          fontStyle: isDeleted ? FontStyle.italic : FontStyle.normal,
+                        ),
+                      ),
                     ),
-                  );
-                }).reversed.toList(),
-              ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDeleted ? theme.colorScheme.surfaceDim : theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${e.value}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDeleted ? theme.colorScheme.onSurface : theme.colorScheme.onPrimaryContainer
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(width: 8),
-            // Chart area
-            Expanded(
-              child: SizedBox(
-                height: chartHeight,
-                child: CustomPaint(
-                  painter: _WeeklyChartPainter(
-                    data: data,
-                    maxValue: maxValue,
-                    gridColor: theme.colorScheme.outlineVariant,
-                  ),
-                  size: Size(chartWidth, chartHeight),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // X-axis labels
-        Padding(
-          padding: const EdgeInsets.only(left: 38),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: labels.map((label) {
-              return Flexible(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-}
-
-class _WeeklyChartPainter extends CustomPainter {
-  final List<double> data;
-  final double maxValue;
-  final Color gridColor;
-
-  _WeeklyChartPainter({
-    required this.data,
-    required this.maxValue,
-    required this.gridColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = gridColor.withOpacity(0.3)
-      ..strokeWidth = 1;
-
-    // Draw grid lines
-    for (int i = 0; i <= 4; i++) {
-      final y = size.height - (i * size.height / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-
-    // Draw vertical lines for each data point
-    final barWidth = size.width / data.length;
-    for (int i = 0; i < data.length; i++) {
-      final x = i * barWidth + barWidth / 2;
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint..style = PaintingStyle.stroke..strokeWidth = 0.5,
-      );
-    }
-
-    // Draw bars with actual data
-    final barPaint = Paint()..color = const Color(0xFF6A4BFF);
-    for (int i = 0; i < data.length; i++) {
-      final barHeight = (data[i] / maxValue) * size.height;
-      final x = i * barWidth;
-      if (barHeight > 0) {
-        canvas.drawRect(
-          Rect.fromLTWH(x + 10, size.height - barHeight, barWidth - 20, barHeight),
-          barPaint,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// Daily XP Chart Widget
-class _DailyXPChart extends StatelessWidget {
-  final List<double> data;
-  final List<String> xLabels = ['0', '8', '12', '17', '22', '27', '1', '6'];
-
-  _DailyXPChart({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final maxValue = 4.0;
-    final chartHeight = 160.0;
-    final chartWidth = MediaQuery.of(context).size.width - 64;
-
-    return Column(
-      children: [
-        // Chart area
-        SizedBox(
-          height: chartHeight,
-          child: CustomPaint(
-            painter: _DailyXPChartPainter(
-              data: data,
-              maxValue: maxValue,
-              gridColor: theme.colorScheme.outlineVariant,
-              lineColor: theme.colorScheme.primary,
-            ),
-            size: Size(chartWidth, chartHeight),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // X-axis labels
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: xLabels.map((label) {
-            return Flexible(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _DailyXPChartPainter extends CustomPainter {
-  final List<double> data;
-  final double maxValue;
-  final Color gridColor;
-  final Color lineColor;
-
-  _DailyXPChartPainter({
-    required this.data,
-    required this.maxValue,
-    required this.gridColor,
-    required this.lineColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = gridColor.withOpacity(0.3)
-      ..strokeWidth = 0.5;
-
-    // Draw horizontal grid lines
-    for (int i = 0; i <= 4; i++) {
-      final y = size.height - (i * size.height / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
-    }
-
-    // Draw vertical dotted lines for x-axis labels
-    final segmentWidth = size.width / 8;
-    final dottedPaint = Paint()
-      ..color = gridColor.withOpacity(0.2)
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i <= 8; i++) {
-      final x = i * segmentWidth;
-      final path = Path();
-      for (double y = 0; y < size.height; y += 4) {
-        path.moveTo(x, y);
-        path.lineTo(x, y + 2);
-      }
-      canvas.drawPath(path, dottedPaint);
-    }
-
-    // Draw line graph
-    if (data.isNotEmpty) {
-      final linePaint = Paint()
-        ..color = lineColor
-        ..strokeWidth = 2.5
-        ..style = PaintingStyle.stroke;
-
-      final pointPaint = Paint()
-        ..color = lineColor
-        ..style = PaintingStyle.fill;
-
-      final path = Path();
-      final pointWidth = size.width / data.length;
-
-      for (int i = 0; i < data.length; i++) {
-        final x = i * pointWidth;
-        final y = size.height - (data[i] / maxValue * size.height);
-
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-
-        // Draw point with glow effect
-        canvas.drawCircle(Offset(x, y), 5, pointPaint);
-        final glowPaint = Paint()
-          ..color = lineColor.withOpacity(0.3)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(x, y), 8, glowPaint);
-      }
-
-      canvas.drawPath(path, linePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

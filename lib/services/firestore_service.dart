@@ -8,6 +8,118 @@ class FirestoreService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // USER XP
+  DocumentReference<Map<String, dynamic>> get _userStatsRef {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw 'User must be authenticated';
+    }
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('meta')
+        .doc('stats');
+  }
+  DocumentReference<Map<String, dynamic>>? _userStatsRefOrNull() {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('meta')
+        .doc('stats');
+  }
+
+  Stream<int> getTotalXpStream() {
+    final ref = _userStatsRefOrNull();
+    if (ref == null) return Stream.value(0);
+
+    return ref.snapshots().map((doc) {
+      final data = doc.data();
+      return (data?['totalXp'] as num?)?.toInt() ?? 0;
+    });
+  }
+
+  Stream<Map<String, dynamic>> getUserStatsStream() {
+    final ref = _userStatsRefOrNull();
+    if (ref == null) return Stream.value(<String, dynamic>{});
+
+    return ref.snapshots().map((doc) => doc.data() ?? <String, dynamic>{});
+  }
+
+  Stream<int> getTotalCompletionsStream() {
+    final ref = _userStatsRefOrNull();
+    if (ref == null) return Stream.value(0);
+
+    return ref.snapshots().map((doc) {
+      final data = doc.data();
+      return (data?['totalCompletions'] as num?)?.toInt() ?? 0;
+    });
+  }
+
+
+
+  Future<void> addXp(int amount) async {
+    final ref = _userStatsRefOrNull();
+    if (ref == null) throw 'User must be authenticated';
+
+    await ref.set(
+      {
+        'totalXp': FieldValue.increment(amount),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> grantAchievementXpOnce({
+    required String achievementId,
+    required int xp,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final ref = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('meta')
+        .doc('stats');
+
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data() ?? {};
+
+      final List<dynamic> unlocked =
+          (data['unlockedAchievements'] as List<dynamic>?) ?? [];
+
+      // Already granted -> do nothing
+      if (unlocked.contains(achievementId)) return;
+
+      // First time -> add id + add XP
+      tx.set(
+        ref,
+        {
+          'unlockedAchievements': FieldValue.arrayUnion([achievementId]),
+          'totalXp': FieldValue.increment(xp),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
+  Stream<List<String>> getUnlockedAchievementIdsStream() {
+    final ref = _userStatsRefOrNull();
+    if (ref == null) return Stream.value(const []);
+
+    return ref.snapshots().map((doc) {
+      final data = doc.data();
+      final raw = (data?['unlockedAchievements'] as List<dynamic>?) ?? const [];
+      return raw.map((e) => e.toString()).toList();
+    });
+  }
+
   bool _isLoading = false;
   String? _error;
 
@@ -396,11 +508,14 @@ class FirestoreService extends ChangeNotifier {
 
   Future<void> createHabitCompletion({
     required String habitId,
+    String? habitName,
+    String? habitEmoji,
     required DateTime completedAt,
     String? notes,
   }) async {
     _setLoading(true);
     _setError(null);
+
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -409,11 +524,23 @@ class FirestoreService extends ChangeNotifier {
 
       await _firestore.collection('habitCompletions').add({
         'habitId': habitId,
+        'habitName': habitName,
+        'habitEmoji': habitEmoji,
         'userId': user.uid,
         'completedAt': Timestamp.fromDate(completedAt),
         'notes': notes,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      await _userStatsRef.set(
+        {
+          'totalXp': FieldValue.increment(10),
+          'totalCompletions': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
       _setLoading(false);
     } catch (e) {
       _setError(e.toString());
@@ -437,6 +564,43 @@ class FirestoreService extends ChangeNotifier {
           'completedAt': (data['completedAt'] as Timestamp?)?.toDate(),
         };
       }).toList();
+    });
+  }
+
+
+
+// Replace your existing getUserCompletionsStream with this:
+  Stream<List<Map<String, dynamic>>> getUserCompletionsStream({int limit = 300}) {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value([]);
+
+    return _firestore
+        .collection('habitCompletions')
+        .where('userId', isEqualTo: user.uid)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+
+      final dataList = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          ...data,
+          'completedAt': data['completedAt'] is Timestamp
+              ? (data['completedAt'] as Timestamp).toDate()
+              : null,
+        };
+      }).toList();
+
+      dataList.sort((a, b) {
+        final dateA = a['completedAt'] as DateTime?;
+        final dateB = b['completedAt'] as DateTime?;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateB.compareTo(dateA);
+      });
+
+      return dataList;
     });
   }
 
