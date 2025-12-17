@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import '../../data/habit.dart';
-import '../../data/habit_database.dart';
+import 'package:provider/provider.dart';
+import '../../services/firestore_service.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -12,37 +13,12 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  bool _isLoading = true;
-  List<Habit> _habits = [];
 
   // Use simpler data structures that work with current database
   List<double> _dailyXP = List.filled(30, 0.0); // Last 30 days - will be calculated
   List<double> _weeklyCompletion = [0, 0, 0, 0, 0]; // Fri, Sat, Sun, Tue, Thu
 
   @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    // Load habits
-    final habits = await HabitDatabase.instance.fetchHabits();
-
-    // Calculate daily XP from current habits (simplified - based on streaks)
-    // Since we don't have historical data, we'll simulate it based on current streaks
-    _calculateDailyXP(habits);
-
-    // Calculate weekly completion from current habits
-    _calculateWeeklyCompletion(habits);
-
-    if (!mounted) return;
-
-    setState(() {
-      _habits = habits;
-      _isLoading = false;
-    });
-  }
 
   void _calculateDailyXP(List<Habit> habits) {
     // Since we don't have historical data, distribute XP across last 30 days
@@ -96,13 +72,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   // Calculate statistics
-  int get _totalCompletions => _habits.fold(0, (sum, habit) => sum + habit.streak);
-  int get _activeHabits => _habits.length;
-  double get _avgRate {
-    if (_habits.isEmpty) return 0.0;
-    // Calculate based on how many habits are "on track" (progress < 0.3)
-    final onTrackCount = _habits.where((h) => h.progress < 0.3).length;
-    return (onTrackCount / _habits.length) * 100;
+  int _totalCompletions(List<Habit> habits) =>
+      habits.fold(0, (sum, habit) => sum + habit.streak);
+
+  int _activeHabits(List<Habit> habits) => habits.length;
+
+  double _avgRate(List<Habit> habits) {
+    if (habits.isEmpty) return 0.0;
+    final onTrackCount = habits.where((h) => h.progress < 0.3).length;
+    return (onTrackCount / habits.length) * 100;
   }
 
   @override
@@ -111,33 +89,48 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
-        child: _isLoading
-            ? Center(
+        child: StreamBuilder<List<Habit>>(
+          stream: context.read<FirestoreService>().getHabitsStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
                 child: CircularProgressIndicator(
-                  color: theme.colorScheme.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              )
-            : SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildStatisticsGrid(),
+              );
+            }
+
+            final habits = snapshot.data ?? [];
+
+            // Recompute graph data from live habits
+            _dailyXP = List.filled(30, 0.0);
+            _weeklyCompletion = [0, 0, 0, 0, 0];
+            _calculateDailyXP(habits);
+            _calculateWeeklyCompletion(habits);
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildStatisticsGridLive(habits),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildWeeklyCompletionGraph(),
+                  const SizedBox(height: 16),
+                  _buildXPOver30Days(),
+                  const SizedBox(height: 16),
+                  _buildHabitCompletions(),
+                  const SizedBox(height: 16),
+                  _buildCompletionDetails(habits),
+                  const SizedBox(height: 80),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildWeeklyCompletionGraph(),
-              const SizedBox(height: 16),
-              _buildXPOver30Days(),
-              const SizedBox(height: 16),
-              _buildHabitCompletions(),
-              const SizedBox(height: 16),
-              _buildCompletionDetails(),
-              const SizedBox(height: 80),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -204,38 +197,38 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildStatisticsGrid() {
+  Widget _buildStatisticsGridLive(List<Habit> habits) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.8,
+      childAspectRatio: 1.55,
       children: [
         _buildStatCard(
           icon: Icons.shield,
           iconColor: Colors.purple,
           label: 'Total XP',
-          value: '$_totalXP',
+          value: '${_totalXP}',
         ),
         _buildStatCard(
           icon: Icons.trending_up,
           iconColor: Colors.green,
           label: 'Completions',
-          value: '$_totalCompletions',
+          value: '${_totalCompletions(habits)}',
         ),
         _buildStatCard(
           icon: Icons.calendar_today,
           iconColor: Colors.purple,
           label: 'Active Habits',
-          value: '$_activeHabits',
+          value: '${_activeHabits(habits)}',
         ),
         _buildStatCard(
           icon: Icons.bar_chart,
           iconColor: Colors.orange,
           label: 'Avg Rate',
-          value: '${_avgRate.toStringAsFixed(0)}%',
+          value: '${_avgRate(habits).toStringAsFixed(0)}%',
         ),
       ],
     );
@@ -450,10 +443,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildCompletionDetails() {
+  Widget _buildCompletionDetails(List<Habit> habits) {
     final theme = Theme.of(context);
     // Get habits with completion counts
-    final habitDetails = _habits.map((habit) {
+    final habitDetails = habits.map((habit) {
       return _HabitDetail(
         name: habit.name,
         color: _getHabitColor(habit.emoji ?? ''),
