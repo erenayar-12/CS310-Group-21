@@ -211,7 +211,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                   _buildSection(
                     label: 'Frequency',
                     child: DropdownButtonFormField<HabitFrequency>(
-                      value: _selectedFrequency,
+                      initialValue: _selectedFrequency,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -423,7 +423,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: theme.dividerColor,

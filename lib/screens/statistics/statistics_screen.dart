@@ -15,7 +15,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   bool _isLoading = true;
   List<Habit> _habits = [];
   
-  List<double> _dailyXP = List.filled(30, 0.0); // Last 30 days - will be calculated
+  final List<double> _dailyXP = List.filled(30, 0.0); // Last 30 days - will be calculated
   List<double> _weeklyCompletion = [0, 0, 0, 0, 0]; // Fri, Sat, Sun, Tue, Thu
 
   @override

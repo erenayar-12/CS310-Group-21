@@ -12,7 +12,7 @@ class SettingsView extends StatelessWidget {
 
   final List<Habit> habits;
   final bool isLoading;
-  final Future<void> Function(List<int> habitIds) onDeleteHabits;
+  final Future<void> Function(List<String> habitIds) onDeleteHabits;
 
   void _openHabitEditor(BuildContext context) {
     showModalBottomSheet<void>(
@@ -76,14 +76,14 @@ class _HabitEditorSheet extends StatefulWidget {
   });
 
   final List<Habit> habits;
-  final Future<void> Function(List<int> habitIds) onDeleteHabits;
+  final Future<void> Function(List<String> habitIds) onDeleteHabits;
 
   @override
   State<_HabitEditorSheet> createState() => _HabitEditorSheetState();
 }
 
 class _HabitEditorSheetState extends State<_HabitEditorSheet> {
-  final Set<int> _selectedHabitIds = <int>{};
+  final Set<String> _selectedHabitIds = <String>{};
   bool _isDeleting = false;
 
   Iterable<Habit> get _deletableHabits =>

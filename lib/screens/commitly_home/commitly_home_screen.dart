@@ -6,7 +6,6 @@ import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
-import '../commitly_leaderboard/leaderboard_screen.dart';
 import '../../screens/profile/profile_view.dart';
 import '../groups/groups_screen.dart';
 
@@ -189,7 +188,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
         data: NavigationBarThemeData(
           backgroundColor: const Color(0xFF6A4BFF), // same purple as header
           indicatorColor: Colors.white24,
-          labelTextStyle: MaterialStateProperty.resolveWith(
+          labelTextStyle: WidgetStateProperty.resolveWith(
             (states) => const TextStyle(
               color: Colors.white, // labels white
               fontSize: 12,
