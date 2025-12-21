@@ -14,12 +14,15 @@ class GroupDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final progress = group.totalMembers > 0
         ? group.todayProgress / group.totalMembers
         : 0.0;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -31,16 +34,19 @@ class GroupDetailsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    _buildGroupInfo(),
+                    _buildGroupInfo(context),
                     const SizedBox(height: 24),
-                    _buildWeeklyProgress(),
+
+                    // ✅ Dummy weekly chart yerine açıklama
+                    _buildWeeklyProgressPlaceholder(context),
                     const SizedBox(height: 24),
+
                     _buildMembersSection(context),
                     const SizedBox(height: 24),
-                    _buildTodayProgress(progress),
+                    _buildTodayProgress(context, progress),
                     const SizedBox(height: 24),
                     _buildActions(context),
-                    const SizedBox(height: 80), // Space for bottom nav
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
@@ -79,10 +85,7 @@ class GroupDetailsScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(
-                group.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              child: Text(group.icon, style: const TextStyle(fontSize: 24)),
             ),
           ),
           const SizedBox(width: 12),
@@ -97,15 +100,13 @@ class GroupDetailsScreen extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: group.status == GroupStatus.onTrack
                             ? Colors.green.shade300
@@ -113,9 +114,7 @@ class GroupDetailsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        group.status == GroupStatus.onTrack
-                            ? 'On Track'
-                            : 'Passive',
+                        group.status == GroupStatus.onTrack ? 'On Track' : 'Passive',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -126,18 +125,12 @@ class GroupDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(
-                      Icons.local_fire_department,
-                      color: Colors.orange.shade300,
-                      size: 16,
-                    ),
+                    Icon(Icons.local_fire_department,
+                        color: Colors.orange.shade300, size: 16),
                     const SizedBox(width: 4),
                     Text(
                       '${group.streak} Day Streak',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -149,55 +142,51 @@ class GroupDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGroupInfo() {
+  Widget _card(BuildContext context, Widget child) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
       ),
-      child: Column(
+      child: child,
+    );
+  }
+
+  Widget _buildGroupInfo(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return _card(
+      context,
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Group Information',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.group, size: 20, color: Colors.grey),
+              Icon(Icons.group, size: 20, color: cs.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
                 '${group.totalMembers} members',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+              Icon(Icons.calendar_today, size: 20, color: cs.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
                 'Started ${group.streak} days ago',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface),
               ),
             ],
           ),
@@ -206,37 +195,27 @@ class GroupDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWeeklyProgress() {
-    // Dummy weekly data - replace with actual data
-    final weeklyData = [2, 3, 1, 4, 3, 2, 4]; // Mon-Sun
+  Widget _buildWeeklyProgressPlaceholder(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
+    return _card(
+      context,
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Weekly Progress',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Text(
+            "This Week's Competition",
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
-            child: _WeeklyProgressChart(data: weeklyData),
+          const SizedBox(height: 12),
+          Text(
+            "Weekly chart data is currently placeholder in the project.\n"
+            "Connect it to real completion records when group tracking is implemented.",
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              height: 1.3,
+            ),
           ),
         ],
       ),
@@ -244,37 +223,24 @@ class GroupDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildMembersSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
+    final theme = Theme.of(context);
+
+    return _card(
+      context,
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Members',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               TextButton.icon(
                 onPressed: () {
-                  // Show invite dialog
                   showDialog(
-                    context: context, // Now context is available
+                    context: context,
                     builder: (context) => InviteTeamMembersDialog(
                       inviteLink: group.inviteLink ?? 'https://habittracker.app/invite/${group.id}',
                     ),
@@ -286,26 +252,33 @@ class GroupDetailsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...group.members.map((member) => _buildMemberRow(member)),
+          if (group.members.isEmpty)
+            Text(
+              'No group members yet',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            ...group.members.map((m) => _buildMemberRow(context, m)),
         ],
       ),
     );
   }
 
-  Widget _buildMemberRow(TeamMember member) {
-    // Dummy completion status - replace with actual data
-    final hasCompletedToday = group.members.indexOf(member) < group.todayProgress;
+  Widget _buildMemberRow(BuildContext context, TeamMember member) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
+    // Not: hasCompletedToday şu an dummy idi. Gerçek completion datası yok.
+    // Şimdilik göstermiyoruz; isterseniz ileride gerçek dataya bağlanır.
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: cs.surfaceContainerHighest.withOpacity(0.6),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: hasCompletedToday ? Colors.green.shade200 : Colors.grey.shade200,
-          width: hasCompletedToday ? 2 : 1,
-        ),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
       ),
       child: Row(
         children: [
@@ -334,88 +307,38 @@ class GroupDetailsScreen extends StatelessWidget {
               children: [
                 Text(
                   member.name ?? member.initials,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
                   ),
                 ),
                 if (member.email != null)
                   Text(
                     member.email!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
               ],
             ),
           ),
-          if (hasCompletedToday)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Done',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Pending',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildTodayProgress(double progress) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
+  Widget _buildTodayProgress(BuildContext context, double progress) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return _card(
+      context,
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Today's Progress",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -424,21 +347,19 @@ class GroupDetailsScreen extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: progress.clamp(0.0, 1.0),
                     minHeight: 12,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.purple.shade600,
-                    ),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '${group.todayProgress}/${group.totalMembers}',
-                style: const TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
                 ),
               ),
             ],
@@ -446,9 +367,8 @@ class GroupDetailsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${(progress * 100).toStringAsFixed(0)}% of members completed today',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
             ),
           ),
         ],
@@ -457,14 +377,17 @@ class GroupDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildActions(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton.icon(
+          child: FilledButton.icon(
             onPressed: () {
               showDialog(
-                context: context, // This should work if context is passed
+                context: context,
                 builder: (context) => InviteTeamMembersDialog(
                   inviteLink: group.inviteLink ?? 'https://habittracker.app/invite/${group.id}',
                 ),
@@ -472,14 +395,6 @@ class GroupDetailsScreen extends StatelessWidget {
             },
             icon: const Icon(Icons.person_add),
             label: const Text('Invite Members'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple.shade600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -487,7 +402,6 @@ class GroupDetailsScreen extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-              // TODO: Implement leave group functionality
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Leave group functionality coming soon')),
               );
@@ -495,119 +409,14 @@ class GroupDetailsScreen extends StatelessWidget {
             icon: const Icon(Icons.exit_to_app),
             label: const Text('Leave Group'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: cs.error,
+              side: BorderSide(color: cs.error.withOpacity(0.6)),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
       ],
     );
   }
-}
-
-// Weekly Progress Chart Widget
-class _WeeklyProgressChart extends StatelessWidget {
-  final List<int> data;
-  final List<String> labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  _WeeklyProgressChart({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final maxValue = data.isEmpty ? 4.0 : data.reduce((a, b) => a > b ? a : b).toDouble().clamp(1.0, 4.0);
-    final chartHeight = 160.0;
-
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 30,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(5, (index) {
-                  final value = maxValue - (index * (maxValue / 4));
-                  return Text(
-                    value.toStringAsFixed(0),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  );
-                }).reversed.toList(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SizedBox(
-                height: chartHeight,
-                child: CustomPaint(
-                  painter: _WeeklyChartPainter(data: data, maxValue: maxValue),
-                  size: Size(MediaQuery.of(context).size.width - 64, chartHeight),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(left: 38),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: labels.map((label) {
-              return SizedBox(
-                width: (MediaQuery.of(context).size.width - 64 - 40) / labels.length,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _WeeklyChartPainter extends CustomPainter {
-  final List<int> data;
-  final double maxValue;
-
-  _WeeklyChartPainter({required this.data, required this.maxValue});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.shade300
-      ..strokeWidth = 1;
-
-    // Draw grid lines
-    for (int i = 0; i <= 4; i++) {
-      final y = size.height - (i * size.height / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-
-    // Draw bars
-    final barWidth = size.width / data.length;
-    final barPaint = Paint()..color = Colors.purple.shade600;
-    
-    for (int i = 0; i < data.length; i++) {
-      final barHeight = (data[i] / maxValue) * size.height;
-      final x = i * barWidth;
-      canvas.drawRect(
-        Rect.fromLTWH(x + 10, size.height - barHeight, barWidth - 20, barHeight),
-        barPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

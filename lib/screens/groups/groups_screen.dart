@@ -6,6 +6,7 @@ import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
 import '../../services/firestore_service.dart';
+import 'group_details_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -36,7 +37,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   void _onGroupTap(HabitGroup group) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LeaderboardScreen(),
+        builder: (context) => GroupDetailsScreen(group: group),
       ),
     );
   }
