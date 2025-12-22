@@ -120,7 +120,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 children: uniqueUids.take(5).map((uid) { // Show up to 5 unique members
                   return Padding(
                     padding: const EdgeInsets.only(left: 4),
-                    child: MemberAvatar(uid: uid, size: 32), // Using your helper widget!
+                    child: CircleAvatar(
+                      radius: 16,
+                      child: Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?'),
+                    ), // Using your helper widget!
                   );
                 }).toList(),
               );
@@ -168,7 +171,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
                               children: uniqueUids.take(5).map((uid) {
                                 return Padding(
                                   padding: const EdgeInsets.only(left: 4),
-                                  child: MemberAvatar(uid: uid, size: 32),
+                                  child: CircleAvatar(
+                                    radius: 16,
+                                    child: Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?'),
+                                  ),
                                 );
                               }).toList(),
                             );
@@ -612,7 +618,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           children: group.members.map((uid) {
                             return Container(
                               margin: const EdgeInsets.only(right: 8),
-                              child: MemberAvatar(uid: uid), // This handles the Firestore lookup
+                              child: CircleAvatar(
+                                child: Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?'),
+                              ), // This handles the Firestore lookup
                             );
                           }).toList(),
                         ),

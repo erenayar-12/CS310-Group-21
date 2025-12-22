@@ -260,7 +260,16 @@ class GroupDetailsScreen extends StatelessWidget {
               ),
             )
           else
-            ...group.members.map((m) => _buildMemberRow(context, m)),
+            ...group.members.map(
+                  (uid) => _buildMemberRow(
+                context,
+                TeamMember(
+                  id: uid,
+                  initials: uid.substring(0, 1).toUpperCase(),
+                  color: Theme.of(context).colorScheme.primary.toARGB32(),
+                ),
+              ),
+            ),
         ],
       ),
     );
