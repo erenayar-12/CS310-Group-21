@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '/screens/profile/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -26,13 +27,26 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Initialize email from Firebase user
       final authService = Provider.of<AuthService>(context, listen: false);
       final user = authService.currentUser;
       if (user != null) {
         _emailController.text = user.email ?? '';
-        _nameController.text = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+          if (doc.exists && doc.data() != null) {
+            setState(() {
+              _nameController.text = doc.data()!['username'] ?? '';
+            });
+          }
+        } catch (e) {
+          print("Data allocation error: $e");
+        }
       }
     });
   }
@@ -91,11 +105,34 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-  void _saveProfile() {
-    if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
+  Future<void> _saveProfile() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'username': _nameController.text.trim(), // Use 'username' consistently
+          'email': _emailController.text.trim(),
+          'dailyGoal': _goalController.text.trim(),
+        }, SetOptions(merge: true));
+
+        // After saving, delete the old 'name' field if it exists to keep it clean
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'name': FieldValue.delete()});
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile synchronized and saved!')),
+        );
+      } catch (e) {
+        debugPrint("Update Error: $e");
+      }
     }
   }
 

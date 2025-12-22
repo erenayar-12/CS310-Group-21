@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     final isValid = _formKey.currentState?.validate() ?? false;
-
     if (!isValid) return;
 
     setState(() {
@@ -44,27 +44,38 @@ class _LoginScreenState extends State<LoginScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     try {
       if (_isLogin) {
-        // Sign in
         await authService.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
       } else {
-        // Sign up
+        // 1. Sign up the user in Firebase Auth
         await authService.signUpWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
-        // Note: Username and birthdate can be saved to Firestore later
-        // For now, we only handle authentication
-      }
 
-      // Navigation will be handled by auth state listener in app.dart
-      // No need to manually navigate here
+        // 2. Get the newly created user's UID
+        final user = authService.currentUser;
+
+        if (user != null) {
+          // 3. CREATE the Firestore document so it exists for the Profile Page
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+            'username': _usernameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'birthdate': _birthdateController.text,
+            'uid': user.uid,
+            'createdAt': FieldValue.serverTimestamp(),
+            'dailyGoal': '5', // Default value
+          });
+        }
+      }
     } catch (e) {
-    if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = "Something went wrong: ${e.toString()}";
         _isLoading = false;
       });
     }

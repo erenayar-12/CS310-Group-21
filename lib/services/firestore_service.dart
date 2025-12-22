@@ -333,9 +333,15 @@ class FirestoreService extends ChangeNotifier {
       }
 
       final groupData = group.toFirestore();
+      List<String> currentMembers = List<String>.from(groupData['members'] ?? []);
+      if (!currentMembers.contains(user.uid)) {
+        currentMembers.add(user.uid);
+      }
+
+      groupData['members'] = currentMembers; // Update the list
+      groupData['totalMembers'] = currentMembers.length; // Sync the count
       groupData['createdBy'] = user.uid;
       groupData['createdAt'] = FieldValue.serverTimestamp();
-
       final docRef = await _firestore.collection('habitGroups').add(groupData);
       _setLoading(false);
       return docRef.id;
@@ -380,7 +386,7 @@ class FirestoreService extends ChangeNotifier {
 
     return _firestore
         .collection('habitGroups')
-        .where('createdBy', isEqualTo: user.uid)
+        .where('members', arrayContains: user.uid)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -408,7 +414,7 @@ class FirestoreService extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('habitGroups')
-          .where('createdBy', isEqualTo: user.uid)
+          .where('members', arrayContains: user.uid)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -628,5 +634,34 @@ class FirestoreService extends ChangeNotifier {
       _setLoading(false);
       rethrow;
     }
+  }
+
+  Future<void> updateUserProfile(String name, String goal) async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'username': name.trim(), // We use 'username' as the new standard
+      'dailyGoal': goal.trim(),
+      'email': user.email,
+    }, SetOptions(merge: true)); // This ensures old users get their doc created
+  }
+
+  Future<void> incrementGroupProgress(String groupId) async {
+    final groupRef = _firestore.collection('habitGroups').doc(groupId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(groupRef);
+      if (!snapshot.exists) return;
+
+      final currentProgress = snapshot.data()?['todayProgress'] ?? 0;
+      final totalMembers = snapshot.data()?['totalMembers'] ?? 1;
+
+      if (currentProgress < totalMembers) {
+        transaction.update(groupRef, {
+          'todayProgress': FieldValue.increment(1),
+        });
+      }
+    });
   }
 }

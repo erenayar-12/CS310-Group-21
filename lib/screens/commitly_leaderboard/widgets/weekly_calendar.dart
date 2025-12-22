@@ -1,352 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../data/habit_group.dart';
 
-/// MODEL: tracks each member’s completion days
-class MemberWeekProgress {
-  final String name;
-  final String initials;
-  final Color color;
-  final bool isYou;
-  final Set<DateTime> completedDays;
+class WeeklyCalendar extends StatelessWidget {
+  final HabitGroup group;
 
-  MemberWeekProgress({
-    required this.name,
-    required this.initials,
-    required this.color,
-    this.isYou = false,
-    Set<DateTime>? completedDays,
-  }) : completedDays = completedDays ?? {};
-
-  int get completedCount => completedDays.length;
-}
-
-/// Utility: remove time from a DateTime
-DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-/// MAIN WIDGET
-class WeeklyCalendar extends StatefulWidget {
-  const WeeklyCalendar({super.key});
-
-  @override
-  State<WeeklyCalendar> createState() => _WeeklyCalendarState();
-}
-
-class _WeeklyCalendarState extends State<WeeklyCalendar> {
-  late final List<MemberWeekProgress> members;
-
-  @override
-  void initState() {
-    super.initState();
-
-    members = [];
-  }
+  const WeeklyCalendar({required this.group, super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "This Week's Details",
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            if (members.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Center(
-                  child: Text(
-                    'No group members yet',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              )
-            else
-              Column(
-                children: members
-                    .map(
-                      (m) => _MemberWeekCard(
-                    member: m,
-                    onDayTapped: (member, day) =>
-                        _handleDayTapped(context, member, day),
-                  ),
-                )
-                    .toList(),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleDayTapped(
-      BuildContext context,
-      MemberWeekProgress member,
-      DateTime day,
-      ) async {
+    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
     final today = dateOnly(DateTime.now());
-    final d = dateOnly(day);
 
-    if (!member.isYou) return;
+    // Generate 6 boxes (Starting from Sunday to match your screenshot)
+    final startDay = today.subtract(Duration(days: today.weekday % 7));
+    final weekDays = List.generate(6, (i) => startDay.add(Duration(days: i)));
 
-    if (d != today) return;
+    if (currentUserId == null) return const SizedBox.shrink();
 
-    final isCompleted = member.completedDays.contains(d);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('habitCompletions')
+            .where('habitId', isEqualTo: group.id)
+            .where('userId', isEqualTo: currentUserId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          final completedDates = (snapshot.data?.docs ?? [])
+              .map((doc) => dateOnly((doc['completedAt'] as Timestamp).toDate()))
+              .toSet();
 
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          isCompleted ? 'Undo completion?' : 'Mark today as completed?',
-        ),
-        content: Text(
-          isCompleted
-              ? 'Do you want to mark today as NOT completed?'
-              : 'Do you want to mark today as completed?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(
-              isCompleted ? 'Mark as not done' : 'Complete',
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    // 4) Toggle completion
-    setState(() {
-      if (isCompleted) {
-        member.completedDays.remove(d);
-      } else {
-        member.completedDays.add(d);
-      }
-    });
-  }
-}
-
-/// ONE PERSON’S CARD
-class _MemberWeekCard extends StatelessWidget {
-  const _MemberWeekCard({
-    required this.member,
-    required this.onDayTapped,
-  });
-
-  final MemberWeekProgress member;
-  final void Function(MemberWeekProgress, DateTime) onDayTapped;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final today = dateOnly(DateTime.now());
-    final start = today.subtract(const Duration(days: 6));
-    final weekDays = List.generate(7, (i) => start.add(Duration(days: i)));
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Avatar + name + You badge
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: member.color.withOpacity(0.15),
-                child: Text(
-                  member.initials,
-                  style: TextStyle(
-                    color: member.color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        member.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (member.isYou) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'You',
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${member.completedCount}/7 days',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // WEEK BOXES
-          Row(
+          return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: weekDays.map((day) {
-              final d = dateOnly(day);
-              final isToday = d == today;
-              final isCompleted = member.completedDays.contains(d);
-
-              final box = _DayBox(
-                label: _dayLabel(d),
-                date: d.day.toString(),
-                isToday: isToday,
-                isCompleted: isCompleted,
-                isClickable: member.isYou && isToday,
+              return _DayBox(
+                dayName: _getDayName(day),
+                dayDate: day.day.toString(),
+                isToday: dateOnly(day) == today,
+                isCompleted: completedDates.contains(dateOnly(day)),
               );
-
-              if (member.isYou && isToday) {
-                return GestureDetector(
-                  onTap: () => onDayTapped(member, d),
-                  child: box,
-                );
-              } else {
-                return box;
-              }
             }).toList(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  String _dayLabel(DateTime d) {
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return labels[d.weekday - 1];
-  }
+  String _getDayName(DateTime d) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
 }
 
-/// INDIVIDUAL BOX (Fri 31)
 class _DayBox extends StatelessWidget {
-  const _DayBox({
-    required this.label,
-    required this.date,
-    required this.isToday,
-    required this.isCompleted,
-    required this.isClickable,
-  });
-
-  final String label;
-  final String date;
+  final String dayName;
+  final String dayDate;
   final bool isToday;
   final bool isCompleted;
-  final bool isClickable;
+
+  const _DayBox({
+    required this.dayName,
+    required this.dayDate,
+    required this.isToday,
+    required this.isCompleted,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderColor = isToday 
-        ? theme.colorScheme.primary 
-        : theme.colorScheme.outlineVariant;
 
-    return Opacity(
-      opacity: isClickable || !isToday ? 1.0 : 1.0,
-      child: Container(
-        width: 42,
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          color: isCompleted
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.2),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isToday 
-                    ? theme.colorScheme.primary 
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              date,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
+    // DYNAMIC COLORS
+    final Color completedBg = theme.colorScheme.primaryContainer;
+    final Color idleBg = theme.colorScheme.surfaceContainer;
+    final Color onCompleted = theme.colorScheme.onPrimaryContainer;
 
-            Icon(
-              isCompleted ? Icons.check : Icons.close,
-              size: 10,
-              color: isCompleted 
-                  ? theme.colorScheme.primary 
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
+    return Container(
+      width: 50, height: 75,
+      decoration: BoxDecoration(
+        color: isCompleted ? completedBg : idleBg,
+        borderRadius: BorderRadius.circular(12),
+        border: isToday ? Border.all(color: theme.colorScheme.primary, width: 2) : null,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(dayName, style: TextStyle(fontSize: 10, color: isCompleted ? onCompleted : theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 4),
+          Text(dayDate, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isCompleted ? onCompleted : theme.colorScheme.onSurface)),
+          if (isCompleted) Icon(Icons.check, size: 14, color: onCompleted),
+        ],
       ),
     );
   }
 }
+

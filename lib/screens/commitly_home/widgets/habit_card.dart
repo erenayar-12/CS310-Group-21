@@ -40,11 +40,11 @@ class _HabitCardState extends State<HabitCard> {
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(widget.isHovered ? 0.3 : 0.18),
+              color: Colors.black.withOpacity(widget.isHovered ? 0.2 : 0.1),
               blurRadius: widget.isHovered ? 14 : 10,
               offset: Offset(0, widget.isHovered ? 8 : 4),
             ),
@@ -66,7 +66,7 @@ class _HabitCardState extends State<HabitCard> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: colorScheme.surfaceVariant.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       alignment: Alignment.center,
@@ -86,7 +86,7 @@ class _HabitCardState extends State<HabitCard> {
                                 child: Text(
                                   widget.habit.name,
                                   style: theme.textTheme.titleMedium?.copyWith(
-                                    color: Colors.black87,
+                                    color: colorScheme.onSurface,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -141,14 +141,14 @@ class _HabitCardState extends State<HabitCard> {
                           Text(
                             widget.habit.frequencyLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.black87,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             widget.habit.streakLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.black87,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                           if (widget.habit.description != null &&
@@ -157,7 +157,7 @@ class _HabitCardState extends State<HabitCard> {
                             Text(
                               widget.habit.description!,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.black87,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -167,11 +167,7 @@ class _HabitCardState extends State<HabitCard> {
                             child: LinearProgressIndicator(
                               value: widget.habit.progress.clamp(0.0, 1.0),
                               minHeight: 8,
-                              backgroundColor:
-                              const Color(0xFFE0E0F5), // light track
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                colorScheme.primary,
-                              ),
+                              backgroundColor: colorScheme.outlineVariant.withOpacity(0.3),
                             ),
                           ),
                           const SizedBox(height: 8),

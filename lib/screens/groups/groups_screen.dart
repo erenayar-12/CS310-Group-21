@@ -6,6 +6,48 @@ import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
 import '../../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class MemberAvatar extends StatelessWidget {
+  final String uid;
+  final double size;
+
+  const MemberAvatar({required this.uid, this.size = 36, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+      builder: (context, snapshot) {
+        // While loading or if error, show a grey placeholder
+        if (!snapshot.hasData) {
+          return Container(width: size, height: size, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle));
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>?;
+        final name = userData?['username'] ?? 'U';
+        final color = userData?['color'] ?? 0xFF9C27B0; // Default purple
+
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: Color(color),
+            shape: BoxShape.circle,
+            border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+          ),
+          child: Center(
+            child: Text(
+              name[0].toUpperCase(),
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -36,7 +78,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   void _onGroupTap(HabitGroup group) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LeaderboardScreen(),
+        builder: (context) => LeaderboardScreen(group : group),
       ),
     );
   }
@@ -102,18 +144,28 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-            StreamBuilder<List<HabitGroup>>(
-              stream: Provider.of<FirestoreService>(context).getHabitGroupsStream(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.length ?? 0;
-                return Text(
-                  '$count active groups',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-                );
-              },
+          StreamBuilder<List<HabitGroup>>(
+            stream: Provider.of<FirestoreService>(context).getHabitGroupsStream(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              // Collect all unique UIDs across all your groups
+              final uniqueUids = <String>{};
+              for (final group in snapshot.data!) {
+                uniqueUids.addAll(group.members);
+              }
+
+              return Row(
+                children: uniqueUids.take(5).map((uid) { // Show up to 5 unique members
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: MemberAvatar(uid: uid, size: 32), // Using your helper widget!
+                  );
+                }).toList(),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Container(
@@ -145,44 +197,24 @@ class _GroupsScreenState extends State<GroupsScreen> {
                             if (!snapshot.hasData || snapshot.data!.isEmpty) {
                               return const SizedBox.shrink();
                             }
-                            
-                            final allMembers = <TeamMember>[];
+
+                            // 1. Collect all unique UIDs across all groups using a Set
+                            final uniqueUids = <String>{};
                             for (final group in snapshot.data!) {
-                              allMembers.addAll(group.members);
+                              uniqueUids.addAll(group.members);
                             }
-                            
-                            final uniqueMembers = <String, TeamMember>{};
-                            for (final member in allMembers) {
-                              if (!uniqueMembers.containsKey(member.id)) {
-                                uniqueMembers[member.id] = member;
-                              }
-                            }
-                            
+
+                            // 2. Map these UIDs to your MemberAvatar widget
                             return Row(
-                              children: uniqueMembers.values.map((member) {
-                    return Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Color(member.color),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          member.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                              children: uniqueUids.take(5).map((uid) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: MemberAvatar(uid: uid, size: 32),
+                                );
+                              }).toList(),
                             );
                           },
-                ),
+                        ),
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: _showInviteDialog,
@@ -617,39 +649,14 @@ class _GroupsScreenState extends State<GroupsScreen> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                  children: group.members.map((member) {
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                              width: 36,
-                              height: 36,
-                      decoration: BoxDecoration(
-                        color: Color(member.color),
-                        shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: theme.colorScheme.surface,
-                                  width: 2.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(member.color).withOpacity(0.4),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          member.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                                    fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          // We map the list of UIDs (Strings) to our new MemberAvatar widget
+                          children: group.members.map((uid) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: MemberAvatar(uid: uid), // This handles the Firestore lookup
+                            );
+                          }).toList(),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
                       ),
                     ),
                   ],
