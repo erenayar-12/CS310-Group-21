@@ -87,6 +87,7 @@ class DoneCard extends StatelessWidget {
                   onPressed: isGroupComplete || currentUserId == null ? null : () async {
                     try {
                       await firestoreService.incrementGroupProgress(group.id!);
+
                       await firestoreService.createHabitCompletion(
                         habitId: group.id!,
                         habitName: group.name,

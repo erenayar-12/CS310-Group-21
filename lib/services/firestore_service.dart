@@ -31,6 +31,7 @@ class FirestoreService extends ChangeNotifier {
         .doc('stats');
   }
 
+
   Stream<int> getTotalXpStream() {
     final ref = _userStatsRefOrNull();
     if (ref == null) return Stream.value(0);
@@ -556,21 +557,15 @@ class FirestoreService extends ChangeNotifier {
   }
 
   Stream<List<Map<String, dynamic>>> getHabitCompletionsStream(String habitId) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return Stream.value([]);
+
     return _firestore
         .collection('habitCompletions')
         .where('habitId', isEqualTo: habitId)
-        .orderBy('completedAt', descending: true)
+        .where('userId', isEqualTo: userId) // CRITICAL: Matches Security Rules
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': doc.id,
-          ...data,
-          'completedAt': (data['completedAt'] as Timestamp?)?.toDate(),
-        };
-      }).toList();
-    });
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WeeklyTrackerPage extends StatefulWidget {
   const WeeklyTrackerPage({super.key});
@@ -223,11 +224,17 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
       builder: (context, completionsSnapshot) {
         final completions = completionsSnapshot.data ?? [];
         final completedDates = completions
-            .where((c) => c['completedAt'] != null)
             .map((c) {
-              final date = c['completedAt'] as DateTime;
-              return DateTime(date.year, date.month, date.day);
-            })
+          final dynamic completedAtData = c['completedAt'];
+          if (completedAtData is Timestamp) { // Now 'Timestamp' will be recognized
+            return completedAtData.toDate();
+          } else if (completedAtData is DateTime) {
+            return completedAtData;
+          }
+          return null;
+        })
+            .whereType<DateTime>()
+            .map((date) => DateTime(date.year, date.month, date.day))
             .toSet();
 
         final completedCount = weekDays.where((day) {
