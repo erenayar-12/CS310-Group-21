@@ -35,6 +35,7 @@ service cloud.firestore {
     match /habitGroups/{groupId} {
       // Allow read if user owns the group OR group is public (status == 'onTrack')
       allow read: if isOwner(resource.data.createdBy) 
+        || request.auth.uid in resource.data.members
         || resource.data.status == 'onTrack';
       
       // Allow create if user is authenticated and sets their own userId
