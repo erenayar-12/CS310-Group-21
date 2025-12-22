@@ -1,15 +1,13 @@
+import 'package:commitly/screens/weekly_tracker/weekly_tracker_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/habit.dart';
-import '../../data/habit_database.dart';
+import '../../services/firestore_service.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
-import 'widgets/settings_view.dart';
-import '../../screens/auth/login_screen.dart';
-import '../../screens/groups/groups_screen.dart';
-import '../../screens/statistics/statistics_screen.dart';
-import 'widgets/custom_bottom_nav_bar.dart';
-import '../../weekly_tracker_page.dart';
+import '../../screens/profile/profile_view.dart';
+import '../groups/groups_screen.dart';
 
 class CommitlyHomeScreen extends StatefulWidget {
   const CommitlyHomeScreen({super.key});
@@ -20,72 +18,43 @@ class CommitlyHomeScreen extends StatefulWidget {
 
 class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
   int _currentIndex = 0;
-  bool _isLoading = true;
-  final List<Habit> _habits = [];
   int? _hoveredHabitIndex;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadHabits();
-  }
-
-  Future<void> _loadHabits() async {
-    final habits = await HabitDatabase.instance.fetchHabits();
-    if (!mounted) {
-      return;
-    }
-
-    habits.sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
-
-    setState(() {
-      _habits
-        ..clear()
-        ..addAll(habits);
-      _isLoading = false;
-    });
-  }
-
   Future<void> _handleHabitCreated(Habit habit) async {
-    await HabitDatabase.instance.createHabit(habit);
-    await _loadHabits();
-  }
-
-  Future<void> _handleSeedDummyHabits() async {
-    await HabitDatabase.instance.seedDummyHabits();
-    await _loadHabits();
-  }
-
-  Future<void> _handleDeleteSelectedHabits(List<int> habitIds) async {
-    if (habitIds.isEmpty) {
-      return;
-    }
-
-    final deletedCount =
-        await HabitDatabase.instance.deleteHabits(habitIds);
-    await _loadHabits();
-
-    if (!mounted) {
-      return;
-    }
-
-    if (deletedCount > 0) {
-      final plural = deletedCount == 1 ? '' : 's';
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    try {
+      await firestoreService.createHabit(habit);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Deleted $deletedCount habit$plural.'),
-        ),
+        const SnackBar(content: Text('Habit created successfully!')),
       );
-    } else {
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No habits were deleted.'),
-        ),
+        SnackBar(content: Text('Failed to create habit: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteHabit(Habit habit) async {
+    if (habit.id == null) return;
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    try {
+      await firestoreService.deleteHabit(habit.id!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${habit.name}" deleted successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete habit: $e')),
       );
     }
   }
 
   Future<void> _promptHabitCompletion(Habit habit) async {
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     final bool? didComplete = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -106,103 +75,158 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       },
     );
 
-    if (!mounted || didComplete != true) {
-      return;
-    }
+    if (!mounted || didComplete != true) return;
 
-    if (habit.id == null) {
-      return;
-    }
-
-    final updatedHabit =
-        await HabitDatabase.instance.completeHabit(habit);
-    await _loadHabits();
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Great job! "${habit.name}" streak is now ${updatedHabit.streak}.',
+    if (habit.progress >= 1.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${habit.name}" is already completed today.'),
         ),
-      ),
-    );
+      );
+      return;
+    }
+
+    try {
+      final updatedHabit = habit.copyWith(
+        progress: 1.0,
+        streak: habit.streak + 1,
+      );
+
+      if (habit.id != null) {
+        await firestoreService.updateHabit(habit.id!, updatedHabit);
+        await firestoreService.createHabitCompletion(
+          habitId: habit.id!,
+          completedAt: DateTime.now(),
+        );
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Great job! "${habit.name}" streak is now ${updatedHabit.streak}.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update habit: $e')),
+      );
+    }
   }
 
   void _onHoverChanged(int? index) {
-    if (_hoveredHabitIndex == index) {
-      return;
-    }
-
+    if (_hoveredHabitIndex == index) return;
     setState(() {
       _hoveredHabitIndex = index;
     });
   }
 
   void _onNavigationDestinationSelected(int index) {
-    if (_currentIndex == index) {
-      return;
-    }
-
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  String _appBarTitle() {
-    switch (_currentIndex) {
-      case 1:
-        return 'Add Habit';
-      case 2:
-        return 'Week'; // Or 'Statistics' if you prefer
-      case 3:
-        return 'Groups';
-      case 4:
-        return 'Profile';
-      default:
-        return 'Commitly';
-    }
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final firestoreService = Provider.of<FirestoreService>(context);
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, // Light background
-      appBar: _currentIndex == 2 ? null : AppBar( // Hide AppBar for Statistics
-        title: Text(_appBarTitle()),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-      ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          HabitListView(
-            habits: _habits,
-            hoveredHabitIndex: _hoveredHabitIndex,
-            isLoading: _isLoading,
-            onHabitSelected: _promptHabitCompletion,
-            onHoverChanged: _onHoverChanged,
+          StreamBuilder<List<Habit>>(
+            stream: firestoreService.getHabitsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return HabitListView(
+                  habits: [],
+                  hoveredHabitIndex: _hoveredHabitIndex,
+                  isLoading: true,
+                  onHabitSelected: _promptHabitCompletion,
+                  onHoverChanged: _onHoverChanged,
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Error: ${snapshot.error}'),
+                    ],
+                  ),
+                );
+              }
+
+              final habits = snapshot.data ?? [];
+              habits.sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
+
+              return HabitListView(
+                habits: habits,
+                hoveredHabitIndex: _hoveredHabitIndex,
+                isLoading: false,
+                onHabitSelected: _promptHabitCompletion,
+                onHoverChanged: _onHoverChanged,
+                onDelete: _handleDeleteHabit,
+                onComplete: _promptHabitCompletion,
+              );
+            },
           ),
+          const WeeklyTrackerPage(),
           AddHabitView(
             onCreateHabit: _handleHabitCreated,
-            onSeedDummyHabits: _handleSeedDummyHabits,
           ),
-          WeeklyTrackerPage (), // Add this - replaces SizedBox.shrink()
           const GroupsScreen(),
-          SettingsView(
-            habits: _habits,
-            isLoading: _isLoading,
-            onDeleteHabits: _handleDeleteSelectedHabits,
-          ),
+          const ProfileView(),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar( // Replace NavigationBar with custom one
-        currentIndex: _currentIndex,
-        onTap: _onNavigationDestinationSelected,
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF6A4BFF), // same purple as header
+          indicatorColor: Colors.white24,
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => const TextStyle(
+              color: Colors.white, // labels white
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _onNavigationDestinationSelected,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: Colors.white70),
+              selectedIcon: Icon(Icons.home, color: Colors.white),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_today_outlined, color: Colors.white70),
+              selectedIcon: Icon(Icons.calendar_today, color: Colors.white),
+              label: 'Week',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.add_circle_outline, color: Colors.white70),
+              selectedIcon: Icon(Icons.add_circle, color: Colors.white),
+              label: 'Add',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.group_outlined, color: Colors.white70),
+              selectedIcon: Icon(Icons.group, color: Colors.white),
+              label: 'Groups',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline, color: Colors.white70),
+              selectedIcon: Icon(Icons.person, color: Colors.white),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }

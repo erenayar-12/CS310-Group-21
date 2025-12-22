@@ -38,7 +38,7 @@ class FriendsListView extends StatelessWidget {
         const SizedBox(height: 8),
 
         // FRIEND CARDS
-        ...friends.map((f) => _buildFriendCard(context, f)).toList(),
+        ...friends.map((f) => _buildFriendCard(context, f)),
         const SizedBox(height: 40),
       ],
     );
