@@ -32,6 +32,27 @@ class _HabitCardState extends State<HabitCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Light mode: siyah tonlar kalsın
+    // Dark mode: temadan gelen açık renkleri kullan
+    final titleColor = isDark ? colorScheme.onSurface : Colors.black87;
+    final secondaryTextColor =
+        isDark ? colorScheme.onSurfaceVariant : Colors.black87;
+    final bodyColor = isDark ? colorScheme.onSurface : Colors.black87;
+
+    final cardColor = isDark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surface;
+
+    final emojiBgColor =
+        isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade100;
+
+    final progressTrackColor =
+        isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFE0E0F5);
+
+    final shadowOpacityBase = isDark ? 0.08 : 0.18;
+    final shadowOpacityHover = isDark ? 0.14 : 0.30;
 
     return MouseRegion(
       onEnter: (_) => widget.onHoverChanged(widget.index),
@@ -40,11 +61,13 @@ class _HabitCardState extends State<HabitCard> {
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: cardColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(widget.isHovered ? 0.2 : 0.1),
+              color: Colors.black.withOpacity(
+                widget.isHovered ? shadowOpacityHover : shadowOpacityBase,
+              ),
               blurRadius: widget.isHovered ? 14 : 10,
               offset: Offset(0, widget.isHovered ? 8 : 4),
             ),
@@ -57,8 +80,7 @@ class _HabitCardState extends State<HabitCard> {
             child: InkWell(
               onTap: () => widget.onHabitSelected(widget.habit),
               child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -66,7 +88,7 @@ class _HabitCardState extends State<HabitCard> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceVariant.withOpacity(0.5),
+                        color: emojiBgColor,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       alignment: Alignment.center,
@@ -86,23 +108,28 @@ class _HabitCardState extends State<HabitCard> {
                                 child: Text(
                                   widget.habit.name,
                                   style: theme.textTheme.titleMedium?.copyWith(
-                                    color: colorScheme.onSurface,
+                                    color: titleColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              if (widget.onDelete != null && widget.habit.id != null)
+                              if (widget.onDelete != null &&
+                                  widget.habit.id != null)
                                 MouseRegion(
                                   cursor: SystemMouseCursors.click,
-                                  onEnter: (_) => setState(() => _isDeleteHovered = true),
-                                  onExit: (_) => setState(() => _isDeleteHovered = false),
+                                  onEnter: (_) =>
+                                      setState(() => _isDeleteHovered = true),
+                                  onExit: (_) =>
+                                      setState(() => _isDeleteHovered = false),
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
                                       color: _isDeleteHovered
-                                          ? Colors.red.shade50
+                                          ? (isDark
+                                              ? Colors.red.withOpacity(0.18)
+                                              : Colors.red.shade50)
                                           : Colors.transparent,
                                       shape: BoxShape.circle,
                                       border: Border.all(
@@ -114,7 +141,8 @@ class _HabitCardState extends State<HabitCard> {
                                       boxShadow: _isDeleteHovered
                                           ? [
                                               BoxShadow(
-                                                color: Colors.red.withOpacity(0.4),
+                                                color:
+                                                    Colors.red.withOpacity(0.35),
                                                 blurRadius: 8,
                                                 spreadRadius: 1,
                                               ),
@@ -141,14 +169,14 @@ class _HabitCardState extends State<HabitCard> {
                           Text(
                             widget.habit.frequencyLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: secondaryTextColor,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             widget.habit.streakLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: secondaryTextColor,
                             ),
                           ),
                           if (widget.habit.description != null &&
@@ -157,7 +185,7 @@ class _HabitCardState extends State<HabitCard> {
                             Text(
                               widget.habit.description!,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface,
+                                color: bodyColor,
                               ),
                             ),
                           ],
@@ -167,7 +195,10 @@ class _HabitCardState extends State<HabitCard> {
                             child: LinearProgressIndicator(
                               value: widget.habit.progress.clamp(0.0, 1.0),
                               minHeight: 8,
-                              backgroundColor: colorScheme.outlineVariant.withOpacity(0.3),
+                              backgroundColor: progressTrackColor,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -185,17 +216,23 @@ class _HabitCardState extends State<HabitCard> {
                                   size: 18,
                                 ),
                                 label: Text(
-                                  widget.habit.progress >= 1.0
-                                      ? 'Done'
-                                      : 'Done',
+                                  'Done',
                                   style: const TextStyle(fontSize: 14),
                                 ),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: widget.habit.progress >= 1.0
-                                      ? Colors.green
+                                      ? (isDark
+                                          ? Colors.green.shade700
+                                          : Colors.green)
                                       : colorScheme.primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 10),
+                                  disabledBackgroundColor: isDark
+                                      ? Colors.white.withOpacity(0.12)
+                                      : null,
+                                  disabledForegroundColor: isDark
+                                      ? Colors.white.withOpacity(0.60)
+                                      : null,
                                 ),
                               ),
                             ),

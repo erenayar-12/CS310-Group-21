@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'screens/auth/login_screen.dart';
 import 'screens/commitly_home/commitly_home_screen.dart';
 import 'services/auth_service.dart';
@@ -36,32 +37,50 @@ class CommitlyApp extends StatelessWidget {
               scaffoldBackgroundColor: const Color(0xFF121212),
             ),
             themeMode: themeService.themeMode,
-            home: Consumer<AuthService>(
-              builder: (context, authService, _) {
-                return StreamBuilder(
-                  stream: authService.authStateChanges,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Scaffold(
-                        body: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
 
-                    final user = snapshot.data;
-                    if (user != null) {
-                      return const CommitlyHomeScreen();
-                    } else {
-                      return const LoginScreen();
-                    }
-                  },
-                );
-              },
-            ),
+            // ✅ Home yerine Gate koyuyoruz.
+            // Tema değişse bile navigation kontrolü burada stabil kalır.
+            home: const _AuthGate(),
           );
         },
       ),
+    );
+  }
+}
+
+class _AuthGate extends StatefulWidget {
+  const _AuthGate({super.key});
+
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  // ✅ CommitlyHomeScreen'in state'ini theme rebuild'lerinde daha stabil tutmak için key
+  final _homeKey = const PageStorageKey<String>('commitly_home');
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = context.read<AuthService>();
+
+    return StreamBuilder(
+      stream: authService.authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = snapshot.data;
+
+        if (user != null) {
+          // ✅ Login ise direkt home, ama key ile state korunur
+          return CommitlyHomeScreen(key: _homeKey);
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

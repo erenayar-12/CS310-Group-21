@@ -6,48 +6,7 @@ import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
 import '../../services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-class MemberAvatar extends StatelessWidget {
-  final String uid;
-  final double size;
-
-  const MemberAvatar({required this.uid, this.size = 36, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
-      builder: (context, snapshot) {
-        // While loading or if error, show a grey placeholder
-        if (!snapshot.hasData) {
-          return Container(width: size, height: size, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle));
-        }
-
-        final userData = snapshot.data!.data() as Map<String, dynamic>?;
-        final name = userData?['username'] ?? 'U';
-        final color = userData?['color'] ?? 0xFF9C27B0; // Default purple
-
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: Color(color),
-            shape: BoxShape.circle,
-            border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
-          ),
-          child: Center(
-            child: Text(
-              name[0].toUpperCase(),
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
+import 'group_details_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -78,7 +37,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   void _onGroupTap(HabitGroup group) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LeaderboardScreen(group : group),
+        builder: (context) => GroupDetailsScreen(group: group),
       ),
     );
   }
