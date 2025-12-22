@@ -6,7 +6,7 @@ import '../../data/habit_group.dart';
 import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
 import '../../services/firestore_service.dart';
-import 'group_details_screen.dart';
+import 'package:commitly/screens/commitly_leaderboard/leaderboard_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -37,7 +37,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   void _onGroupTap(HabitGroup group) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => GroupDetailsScreen(group: group),
+        builder: (context) => LeaderboardScreen(group: group),
       ),
     );
   }
@@ -600,34 +600,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      'Members: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          // We map the list of UIDs (Strings) to our new MemberAvatar widget
-                          children: group.members.map((uid) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 8),
-                              child: CircleAvatar(
-                                child: Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?'),
-                              ), // This handles the Firestore lookup
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+
               ],
             ),
           ),
