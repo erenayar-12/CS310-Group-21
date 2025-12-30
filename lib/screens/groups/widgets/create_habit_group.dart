@@ -62,10 +62,18 @@ class _CreateHabitGroupState extends State<CreateHabitGroup> {
       if (!mounted) return;
 
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Habit group created successfully!'),
-          backgroundColor: Colors.green,
+      // Use AlertDialog for success message as per rubric
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: const Text('Habit group created successfully!'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
     } catch (e) {
