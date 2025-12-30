@@ -108,14 +108,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100, // Light grey background
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 16), // Add bottom padding
-                child: Column(
-                  children: [
-                    _buildHeader(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16), // Add bottom padding
+              child: Column(
+                children: [
+                  _buildHeader(),
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,7 +132,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ],
                 ),
               ),
-      ),
     );
   }
 
@@ -149,7 +147,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           ],
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 24, 16, 24),
       child: Row(
         children: [
           Container(
