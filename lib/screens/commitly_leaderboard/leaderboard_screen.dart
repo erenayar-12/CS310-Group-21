@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../data/habit_group.dart';
+import '../../services/firestore_service.dart';
 import 'widgets/group_header.dart';
 import 'widgets/team_stats_card.dart';
 import 'widgets/weekly_calendar.dart';
@@ -16,21 +17,20 @@ class LeaderboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
 
-    return StreamBuilder<DocumentSnapshot>(
+    return StreamBuilder(
       // Listen to this specific group document for real-time updates
-      stream: FirebaseFirestore.instance
-          .collection('habitGroups')
-          .doc(group.id)
-          .snapshots(),
+      stream: firestoreService.getHabitGroupStream(group.id!),
       builder: (context, snapshot) {
         // Use live data from Firestore if available, otherwise use initial data
-        final liveGroup = snapshot.hasData && snapshot.data!.exists
-            ? HabitGroup.fromFirestore(
-            snapshot.data!.data() as Map<String, dynamic>,
-            snapshot.data!.id
-        )
-            : group;
+        HabitGroup liveGroup = group;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null) {
+            liveGroup = HabitGroup.fromFirestore(data, snapshot.data!.id);
+          }
+        }
 
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../data/habit_group.dart';
+import '../../../services/firestore_service.dart';
 
 class WeeklyCalendar extends StatelessWidget {
   final HabitGroup group;
@@ -21,17 +22,27 @@ class WeeklyCalendar extends StatelessWidget {
 
     if (currentUserId == null) return const SizedBox.shrink();
 
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('habitCompletions')
-            .where('habitId', isEqualTo: group.id)
-            .where('userId', isEqualTo: currentUserId)
-            .snapshots(),
+      child: StreamBuilder(
+        stream: firestoreService.getHabitCompletionsForGroupStream(
+          habitId: group.id!,
+          userId: currentUserId,
+        ),
         builder: (context, snapshot) {
           final completedDates = (snapshot.data?.docs ?? [])
-              .map((doc) => dateOnly((doc['completedAt'] as Timestamp).toDate()))
+              .map((doc) {
+                final completedAt = doc.data()['completedAt'];
+                if (completedAt is Timestamp) {
+                  return dateOnly(completedAt.toDate());
+                } else if (completedAt is DateTime) {
+                  return dateOnly(completedAt);
+                }
+                return null;
+              })
+              .where((date) => date != null)
+              .cast<DateTime>()
               .toSet();
 
           return Row(

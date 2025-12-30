@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/firestore_service.dart';
 import '../../../data/habit_group.dart';
@@ -93,10 +92,7 @@ class DoneCard extends StatelessWidget {
                         habitName: group.name,
                         completedAt: DateTime.now(),
                       );
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(currentUserId)
-                          .update({'xp': FieldValue.increment(10)});
+                      await firestoreService.incrementUserXp(10);
 
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
