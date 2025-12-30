@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -60,17 +60,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (user != null) {
           // 3. CREATE the Firestore document so it exists for the Profile Page
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-            'username': _usernameController.text.trim(),
-            'email': _emailController.text.trim(),
-            'birthdate': _birthdateController.text,
-            'uid': user.uid,
-            'createdAt': FieldValue.serverTimestamp(),
-            'dailyGoal': '5', // Default value
-          });
+          final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+          await firestoreService.createUserDocument(
+            username: _usernameController.text.trim(),
+            email: _emailController.text.trim(),
+            birthdate: _birthdateController.text.isEmpty ? null : _birthdateController.text,
+            dailyGoal: '5',
+          );
         }
       }
     } catch (e) {
@@ -118,10 +114,18 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.check_circle_outline_rounded,
-                  size: 80,
-                  color: colorScheme.primary,
+                // Try to load app icon from assets, fallback to icon
+                Image.asset(
+                  'assets/icons/IconOlası2.png',
+                  width: 80,
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 80,
+                      color: colorScheme.primary,
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Text(
