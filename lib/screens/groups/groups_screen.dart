@@ -47,22 +47,24 @@ class _GroupsScreenState extends State<GroupsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
+      body: Column(
+        children: [
+          _buildHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildActiveGroupsSection(),
-                    const SizedBox(height: 16),
-                    _buildInfoBox(),
-                    const SizedBox(height: 80),
-                  ],
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      _buildActiveGroupsSection(),
+                      const SizedBox(height: 16),
+                      _buildInfoBox(),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -84,7 +86,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ],
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 24, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -173,7 +175,21 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                   padding: const EdgeInsets.only(left: 4),
                                   child: CircleAvatar(
                                     radius: 16,
-                                    child: Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?'),
+                                    child: ClipOval(
+                                      child: Image.network(
+                                        'https://i.pravatar.cc/150?img=${uid.hashCode % 70}', // Placeholder avatar URL
+                                        width: 32,
+                                        height: 32,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?');
+                                        },
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?');
+                                        },
+                                      ),
+                                    ),
                                   ),
                                 );
                               }).toList(),

@@ -74,11 +74,25 @@ class FriendsListView extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar circle
+            // Avatar circle with network image
             CircleAvatar(
               radius: 25,
               backgroundColor: f.color,
-              child: const Icon(Icons.emoji_people, color: Colors.white, size: 28),
+              child: ClipOval(
+                child: Image.network(
+                  'https://i.pravatar.cc/150?img=${f.name.hashCode % 70}', // Placeholder avatar URL
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.emoji_people, color: Colors.white, size: 28);
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Icon(Icons.emoji_people, color: Colors.white, size: 28);
+                  },
+                ),
+              ),
             ),
             const SizedBox(width: 12),
 
