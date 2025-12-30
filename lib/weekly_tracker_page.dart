@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'utils/app_colors.dart';
 
 /// Weekly Tracker page designed to match the PDF UI.
 class WeeklyTrackerPage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
         title: 'Morning Exercise',
         subtitle: '30 minutes of cardio',
         icon: Icons.fitness_center,
-        color: const Color(0xFF31C36A),
+        color: AppColors.successGreen,
         // Sun..Sat: X, X, ✓, ✓, ✓, (future), (future)
         dayStatuses: [0, 0, 1, 1, 1, -1, -1],
       ),
@@ -60,7 +61,7 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
         title: 'Read a Book',
         subtitle: 'Read for at least 20 minutes',
         icon: Icons.menu_book_rounded,
-        color: const Color(0xFF1F8CFF),
+        color: AppColors.infoBlue,
         // Sun..Sat: X, X, X, ✓, X, (future), (future)
         dayStatuses: [0, 0, 0, 1, 0, -1, -1],
       ),
@@ -70,13 +71,13 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
   @override
   Widget build(BuildContext context) {
     const gradient = LinearGradient(
-      colors: [Color(0xFF8A36FF), Color(0xFF3F6FFF)],
+      colors: [AppColors.primaryPurpleGradientStart, AppColors.primaryPurpleGradientEnd],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -271,8 +272,8 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                     textColor = Colors.grey.shade400;
                     bottomWidget = const SizedBox(height: 14);
                   } else if (isCompleted) {
-                    bgColor = const Color(0xFF31C36A);
-                    borderColor = const Color(0xFF29A658);
+                    bgColor = AppColors.successGreen;
+                    borderColor = AppColors.successGreenDark;
                     textColor = Colors.white;
                     bottomWidget = const Icon(Icons.check, size: 14, color: Colors.white);
                   } else {

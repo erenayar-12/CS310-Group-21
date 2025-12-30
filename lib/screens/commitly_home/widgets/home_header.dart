@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/firestore_service.dart';
+import '../../../utils/app_colors.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -55,7 +56,7 @@ class HomeHeader extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF6A4BFF), Color(0xFF9D5BFF)],
+                colors: [AppColors.primaryPurple, AppColors.primaryPurpleLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

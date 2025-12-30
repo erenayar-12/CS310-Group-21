@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_text_styles.dart';
 import 'widgets/add_habit_view.dart';
 import 'widgets/habit_list_view.dart';
 import '../../screens/profile/profile_view.dart';
@@ -25,8 +27,19 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     try {
       await firestoreService.createHabit(habit);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Habit created successfully!')),
+      // Use AlertDialog for success message as per rubric
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: const Text('Habit created successfully!'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -42,8 +55,19 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
     try {
       await firestoreService.deleteHabit(habit.id!);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"${habit.name}" deleted successfully.')),
+      // Use AlertDialog for success message as per rubric
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: Text('"${habit.name}" deleted successfully.'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -102,11 +126,20 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      // Use AlertDialog for success message as per rubric
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Great Job!'),
           content: Text(
-            'Great job! "${habit.name}" streak is now ${updatedHabit.streak}.',
+            '"${habit.name}" streak is now ${updatedHabit.streak}.',
           ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
     } catch (e) {
@@ -131,7 +164,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = Provider.of<FirestoreService>(context);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -139,7 +172,9 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
           StreamBuilder<List<Habit>>(
             stream: firestoreService.getHabitsStream(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              // Only show loading on initial load, not on updates
+              if (snapshot.connectionState == ConnectionState.waiting && 
+                  !snapshot.hasData) {
                 return HabitListView(
                   habits: [],
                   hoveredHabitIndex: _hoveredHabitIndex,
@@ -163,10 +198,12 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
               }
 
               final habits = snapshot.data ?? [];
-              habits.sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
+              // Sort without mutating original list
+              final sortedHabits = List<Habit>.from(habits)
+                ..sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
 
               return HabitListView(
-                habits: habits,
+                habits: sortedHabits,
                 hoveredHabitIndex: _hoveredHabitIndex,
                 isLoading: false,
                 onHabitSelected: _promptHabitCompletion,
@@ -186,14 +223,10 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF6A4BFF), // same purple as header
+          backgroundColor: AppColors.primaryPurple, // same purple as header
           indicatorColor: Colors.white24,
           labelTextStyle: WidgetStateProperty.resolveWith(
-            (states) => const TextStyle(
-              color: Colors.white, // labels white
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+            (states) => AppTextStyles.navigationBarLabel,
           ),
         ),
         child: NavigationBar(

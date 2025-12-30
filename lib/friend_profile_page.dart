@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'utils/app_colors.dart';
 
 class FriendProfilePage extends StatelessWidget {
   final String name;
@@ -143,7 +144,7 @@ class FriendProfilePage extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF),
+                color: AppColors.cardBackgroundPurple,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(

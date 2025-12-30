@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/habit.dart';
+import '../../../utils/app_colors.dart';
 
 class AddHabitView extends StatefulWidget {
   const AddHabitView({
@@ -46,16 +47,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     '❤️',
   ];
 
-  static const List<Color> _colorOptions = [
-    Color(0xFF22C55E), // green
-    Color(0xFF3B82F6), // blue
-    Color(0xFFA855F7), // purple
-    Color(0xFFEF4444), // red
-    Color(0xFFF97316), // orange
-    Color(0xFFEC4899), // pink
-    Color(0xFF06B6D4), // cyan
-    Color(0xFFEAB308), // yellow
-  ];
+  static const List<Color> _colorOptions = AppColors.habitColorOptions;
 
   @override
   void initState() {
