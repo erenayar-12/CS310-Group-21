@@ -169,49 +169,12 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          StreamBuilder<List<Habit>>(
-            stream: firestoreService.getHabitsStream(),
-            builder: (context, snapshot) {
-              // Only show loading on initial load, not on updates
-              if (snapshot.connectionState == ConnectionState.waiting && 
-                  !snapshot.hasData) {
-                return HabitListView(
-                  habits: [],
-                  hoveredHabitIndex: _hoveredHabitIndex,
-                  isLoading: true,
-                  onHabitSelected: _promptHabitCompletion,
-                  onHoverChanged: _onHoverChanged,
-                );
-              }
-
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Error: ${snapshot.error}'),
-                    ],
-                  ),
-                );
-              }
-
-              final habits = snapshot.data ?? [];
-              // Sort without mutating original list
-              final sortedHabits = List<Habit>.from(habits)
-                ..sort((a, b) => (1 - a.progress).compareTo(1 - b.progress));
-
-              return HabitListView(
-                habits: sortedHabits,
-                hoveredHabitIndex: _hoveredHabitIndex,
-                isLoading: false,
-                onHabitSelected: _promptHabitCompletion,
-                onHoverChanged: _onHoverChanged,
-                onDelete: _handleDeleteHabit,
-                onComplete: _promptHabitCompletion,
-              );
-            },
+          HabitListView(
+            hoveredHabitIndex: _hoveredHabitIndex,
+            onHabitSelected: _promptHabitCompletion,
+            onHoverChanged: _onHoverChanged,
+            onDelete: _handleDeleteHabit,
+            onComplete: _promptHabitCompletion,
           ),
           const WeeklyTrackerPage(),
           AddHabitView(
