@@ -49,7 +49,7 @@ class _HabitCardState extends State<HabitCard> {
         isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade100;
 
     final progressTrackColor =
-        isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFE0E0F5);
+        isDark ? Colors.white.withOpacity(0.12) : AppColors.cardBackgroundLight;
 
     final shadowOpacityBase = isDark ? 0.08 : 0.18;
     final shadowOpacityHover = isDark ? 0.14 : 0.30;

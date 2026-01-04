@@ -659,4 +659,148 @@ class FirestoreService extends ChangeNotifier {
       }
     });
   }
+
+  // User data methods
+  Future<Map<String, dynamic>?> getUserData() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.data();
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    }
+  }
+
+  Future<void> createUserDocument({
+    required String username,
+    required String email,
+    String? birthdate,
+    String dailyGoal = '5',
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'username': username.trim(),
+      'email': email.trim(),
+      if (birthdate != null) 'birthdate': birthdate,
+      'uid': user.uid,
+      'createdAt': FieldValue.serverTimestamp(),
+      'dailyGoal': dailyGoal,
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> updateUserData({
+    String? username,
+    String? email,
+    String? dailyGoal,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    final updateData = <String, dynamic>{};
+    if (username != null) updateData['username'] = username.trim();
+    if (email != null) updateData['email'] = email.trim();
+    if (dailyGoal != null) updateData['dailyGoal'] = dailyGoal.trim();
+
+    await _firestore.collection('users').doc(user.uid).set(
+      updateData,
+      SetOptions(merge: true),
+    );
+
+    // Delete old 'name' field if it exists
+    await _firestore.collection('users').doc(user.uid).update({
+      'name': FieldValue.delete(),
+    });
+  }
+
+  Future<void> clearUserCompletions() async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    final completions = await _firestore
+        .collection('habitCompletions')
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    for (var doc in completions.docs) {
+      await doc.reference.delete();
+    }
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserStream() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return Stream.value(null as DocumentSnapshot<Map<String, dynamic>>);
+    }
+    return _firestore.collection('users').doc(user.uid).snapshots();
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserStreamById(String userId) {
+    return _firestore.collection('users').doc(userId).snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHabitCompletionsQueryStream({
+    required String habitId,
+    String? userId,
+  }) {
+    final user = userId ?? _auth.currentUser?.uid;
+    if (user == null) {
+      return Stream.value(null as QuerySnapshot<Map<String, dynamic>>);
+    }
+
+    var query = _firestore
+        .collection('habitCompletions')
+        .where('habitId', isEqualTo: habitId)
+        .where('userId', isEqualTo: user);
+
+    return query.snapshots();
+  }
+
+  Future<void> markHabitAsDone({
+    required String habitId,
+    required String groupId,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    await _firestore.collection('habitCompletions').add({
+      'habitId': habitId,
+      'groupId': groupId,
+      'userId': user.uid,
+      'completedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> incrementUserXp(int amount) async {
+    final user = _auth.currentUser;
+    if (user == null) throw 'User must be authenticated';
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'xp': FieldValue.increment(amount),
+    });
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHabitCompletionsForGroupStream({
+    required String habitId,
+    String? userId,
+  }) {
+    final user = userId ?? _auth.currentUser?.uid;
+    if (user == null) {
+      return Stream.value(null as QuerySnapshot<Map<String, dynamic>>);
+    }
+
+    return _firestore
+        .collection('habitCompletions')
+        .where('habitId', isEqualTo: habitId)
+        .where('userId', isEqualTo: user)
+        .snapshots();
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getHabitGroupStream(String groupId) {
+    return _firestore.collection('habitGroups').doc(groupId).snapshots();
+  }
 }

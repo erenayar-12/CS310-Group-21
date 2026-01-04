@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../data/habit_group.dart';
+import '../../../services/firestore_service.dart';
 
 class GroupWeeklyTracker extends StatelessWidget {
   final HabitGroup group;
@@ -15,21 +16,31 @@ class GroupWeeklyTracker extends StatelessWidget {
 
     if (currentUserId == null) return const SizedBox.shrink();
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    return StreamBuilder(
+      stream: firestoreService.getUserStreamById(currentUserId),
       builder: (context, userSnap) {
-        if (!userSnap.hasData) return const SizedBox.shrink();
+        if (!userSnap.hasData || !userSnap.data!.exists) return const SizedBox.shrink();
         final userData = userSnap.data!.data() as Map<String, dynamic>?;
 
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('habitCompletions')
-              .where('habitId', isEqualTo: group.id)
-              .where('userId', isEqualTo: currentUserId)
-              .snapshots(),
+        return StreamBuilder(
+          stream: firestoreService.getHabitCompletionsForGroupStream(
+            habitId: group.id!,
+            userId: currentUserId,
+          ),
           builder: (context, completionSnap) {
             final Set<DateTime> dates = (completionSnap.data?.docs ?? [])
-                .map((d) => _dateOnly((d['completedAt'] as Timestamp).toDate()))
+                .map((d) {
+                  final completedAt = d.data()['completedAt'];
+                  if (completedAt is Timestamp) {
+                    return _dateOnly(completedAt.toDate());
+                  } else if (completedAt is DateTime) {
+                    return _dateOnly(completedAt);
+                  }
+                  return null;
+                })
+                .where((date) => date != null)
+                .cast<DateTime>()
                 .toSet();
 
             // FIX: This now points to the widget defined below

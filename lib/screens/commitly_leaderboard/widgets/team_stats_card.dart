@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/habit_group.dart';
+import '../../../utils/app_colors.dart';
 
 class TeamStatsCard extends StatelessWidget {
   final HabitGroup group;
@@ -31,7 +32,7 @@ class TeamStatsCard extends StatelessWidget {
               const SizedBox(height: 12),
               _StatRow(
                 icon: Icons.local_fire_department_outlined,
-                iconColor: const Color(0xFFF97316),
+                iconColor: AppColors.leaderboardOrange,
                 label: 'Total days completed',
                 value: '${group.streak}', // USING STREAK AS TOTAL FOR NOW
                 subtitle: 'All members this week',
@@ -39,7 +40,7 @@ class TeamStatsCard extends StatelessWidget {
               const Divider(height: 16),
               const _StatRow(
                 icon: Icons.trending_up_outlined,
-                iconColor: Color(0xFF22C55E),
+                iconColor: AppColors.leaderboardGreen,
                 label: 'Average streak',
                 value: '---', // Needs calculation logic
                 subtitle: 'Per active member',
@@ -47,10 +48,10 @@ class TeamStatsCard extends StatelessWidget {
               const Divider(height: 16),
               _StatRow(
                 icon: Icons.check_circle_outline,
-                iconColor: const Color(0xFF3B82F6),
+                iconColor: AppColors.leaderboardBlue,
                 label: 'On-track members',
                 value: '${group.todayProgress}/${group.totalMembers}', // REAL PROGRESS
-                subtitle: 'Completed today’s habit',
+                subtitle: 'Completed today's habit',
               ),
             ],
           ),

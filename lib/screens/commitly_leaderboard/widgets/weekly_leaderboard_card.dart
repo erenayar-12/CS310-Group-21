@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../../data/habit_group.dart';
+import '../../../services/firestore_service.dart';
 
 class WeeklyLeaderboardCard extends StatelessWidget {
   final HabitGroup group;
@@ -32,11 +33,13 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                 ),
               )
             else
-              ...group.members.map((uid) => StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
-                  final data = snapshot.data!.data() as Map<String, dynamic>?;
+              ...group.members.map((uid) {
+                final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+                return StreamBuilder(
+                  stream: firestoreService.getUserStreamById(uid),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || !snapshot.data!.exists) return const SizedBox.shrink();
+                    final data = snapshot.data!.data() as Map<String, dynamic>?;
 
                   return _LeaderboardItem(
                     name: data?['username'] ?? 'User',

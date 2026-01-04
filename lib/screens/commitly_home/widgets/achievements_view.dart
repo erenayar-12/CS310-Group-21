@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/habit.dart';
 import '../../../services/firestore_service.dart';
+import '../../../utils/app_colors.dart';
 
 class AchievementsView extends StatefulWidget {
   const AchievementsView({super.key});
@@ -286,14 +287,14 @@ class _AchievementsViewState extends State<AchievementsView>
                         gradient: LinearGradient(
                           colors: [
                             theme.brightness == Brightness.dark
-                                ? const Color(0xFFF59E0B)
-                                : const Color(0xFFFBBF24),
+                                ? AppColors.achievementGold
+                                : AppColors.achievementGoldLight,
                             theme.brightness == Brightness.dark
-                                ? const Color(0xFFEA580C)
-                                : const Color(0xFFF97316),
+                                ? AppColors.achievementOrange
+                                : AppColors.achievementOrangeLight,
                             theme.brightness == Brightness.dark
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFFEF4444),
+                                ? AppColors.achievementRed
+                                : AppColors.achievementRedLight,
                           ],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
@@ -473,7 +474,7 @@ class _AchievementsViewState extends State<AchievementsView>
                                 Expanded(
                                   child: _buildStatCard(
                                     icon: Icons.emoji_events,
-                                    iconColor: const Color(0xFFCA8A04),
+                                    iconColor: AppColors.achievementYellow,
                                     label: 'Unlocked',
                                     value: '$unlockedCount',
                                   ),
@@ -482,7 +483,7 @@ class _AchievementsViewState extends State<AchievementsView>
                                 Expanded(
                                   child: _buildStatCard(
                                     icon: Icons.star,
-                                    iconColor: const Color(0xFF2563EB),
+                                    iconColor: AppColors.achievementBlue,
                                     label: 'Total XP',
                                     value: '$totalXP',
                                   ),
@@ -491,7 +492,7 @@ class _AchievementsViewState extends State<AchievementsView>
                                 Expanded(
                                   child: _buildStatCard(
                                     icon: Icons.local_fire_department,
-                                    iconColor: const Color(0xFFEA580C),
+                                    iconColor: AppColors.achievementOrange,
                                     label: 'Level',
                                     value: '$level',
                                   ),
@@ -504,16 +505,16 @@ class _AchievementsViewState extends State<AchievementsView>
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
+                                  gradient: LinearGradient(
                                   colors: [
                                     theme.brightness == Brightness.dark
                                         ? theme.colorScheme.primary
                                         .withValues(alpha: 0.1)
-                                        : const Color(0xFFEFF6FF),
+                                        : AppColors.achievementBlueLight,
                                     theme.brightness == Brightness.dark
                                         ? theme.colorScheme.secondary
                                         .withValues(alpha: 0.1)
-                                        : const Color(0xFFFAF5FF),
+                                        : AppColors.achievementPurpleLight,
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
