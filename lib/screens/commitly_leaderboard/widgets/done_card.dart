@@ -91,12 +91,23 @@ class DoneCard extends StatelessWidget {
                         habitId: group.id!,
                         habitName: group.name,
                         completedAt: DateTime.now(),
+                        groupId: group.id!,
                       );
                       await firestoreService.incrementUserXp(10);
 
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Done! +10 XP added.')),
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Success'),
+                            content: const Text('Done! +10 XP added.'),
+                            actions: [
+                              FilledButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
                         );
                       }
                     } catch (e) {

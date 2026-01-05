@@ -48,7 +48,8 @@ class WeeklyLeaderboardCard extends StatelessWidget {
                     xp: data?['xp'] ?? 0,
                   );
                 },
-              )),
+                );
+              }).toList(),
             const SizedBox(height: 8),
           ],
         ),
