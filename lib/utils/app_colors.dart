@@ -50,6 +50,11 @@ class AppColors {
   static const Color leaderboardGreen = Color(0xFF22C55E);
   static const Color leaderboardBlue = Color(0xFF3B82F6);
 
+  // Navigation Colors
+  static const Color navigationIndicator = Color(0x3DFFFFFF); // white24 equivalent
+  static const Color navigationIconUnselected = Color(0xB3FFFFFF); // white70 equivalent
+  static const Color navigationIconSelected = Colors.white;
+
   // List of habit color options (for color picker)
   static const List<Color> habitColorOptions = [
     habitGreen,
