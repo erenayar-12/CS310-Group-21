@@ -1,12 +1,12 @@
-import 'package:commitly/screens/commitly_leaderboard/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'widgets/create_habit_group.dart';
 import '../../data/habit_group.dart';
-import '../../data/team_member.dart';
 import 'widgets/invite_team_members_dialog.dart';
 import '../../services/firestore_service.dart';
-import 'package:commitly/screens/commitly_leaderboard/leaderboard_screen.dart';
+import '../../utils/loading_widgets.dart';
+import '../../utils/app_colors.dart';
+import '../../routes/app_routes.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -25,20 +25,19 @@ class _GroupsScreenState extends State<GroupsScreen> {
     );
   }
 
-  void _showInviteDialog() {
+  void _showInviteDialog(String groupId) {
     showDialog(
       context: context,
       builder: (context) => InviteTeamMembersDialog(
-        inviteLink: 'https://habittracker.app/invite/1',
+        groupId: groupId,
       ),
     );
   }
 
   void _onGroupTap(HabitGroup group) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => LeaderboardScreen(group: group),
-      ),
+    Navigator.of(context).pushNamed(
+      AppRoutes.leaderboard,
+      arguments: group,
     );
   }
 
@@ -49,7 +48,23 @@ class _GroupsScreenState extends State<GroupsScreen> {
       backgroundColor: theme.colorScheme.surface,
       body: Column(
         children: [
-          _buildHeader(),
+          // Header with status bar coverage
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primaryPurple,
+                  AppColors.habitPink,
+                ],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: _buildHeader(),
+            ),
+          ),
             Expanded(
               child: SafeArea(
                 top: false,
@@ -69,24 +84,13 @@ class _GroupsScreenState extends State<GroupsScreen> {
               ),
             ),
           ],
-        ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.shade600,
-            Colors.pink.shade400,
-          ],
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 24, 16, 24),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -175,19 +179,13 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                   padding: const EdgeInsets.only(left: 4),
                                   child: CircleAvatar(
                                     radius: 16,
-                                    child: ClipOval(
-                                      child: Image.network(
-                                        'https://i.pravatar.cc/150?img=${uid.hashCode % 70}', // Placeholder avatar URL
-                                        width: 32,
-                                        height: 32,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?');
-                                        },
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Text(uid.isNotEmpty ? uid[0].toUpperCase() : '?');
-                                        },
+                                    backgroundColor: Colors.white.withOpacity(0.2),
+                                    child: Text(
+                                      uid.isNotEmpty ? uid[0].toUpperCase() : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
@@ -195,35 +193,6 @@ class _GroupsScreenState extends State<GroupsScreen> {
                               }).toList(),
                             );
                           },
-                        ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: _showInviteDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.person_add, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Invite',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -244,7 +213,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
       stream: firestoreService.getHabitGroupsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return SkeletonListLoader(
+            itemCount: 2,
+            itemBuilder: (context, index) => const SkeletonGroupCard(),
+          );
         }
 
         if (snapshot.hasError) {
@@ -567,6 +539,22 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    if (group.id != null) {
+                      _showInviteDialog(group.id!);
+                    }
+                  },
+                  icon: const Icon(Icons.person_add, size: 16),
+                  label: const Text('Add Member'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
