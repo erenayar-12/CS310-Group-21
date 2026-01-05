@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 import '/screens/profile/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -113,13 +114,6 @@ class _ProfileViewState extends State<ProfileView> {
         dailyGoal: _goalController.text.trim(),
       );
 
-        // Update local state immediately to reflect changes in UI
-        if (mounted) {
-          setState(() {
-            // State is already updated via controllers, just trigger rebuild
-          });
-        }
-
         if (!mounted) return;
         // Use AlertDialog for success message as per rubric
         showDialog(
@@ -137,7 +131,6 @@ class _ProfileViewState extends State<ProfileView> {
         );
       } catch (e) {
         debugPrint("Update Error: $e");
-      }
     }
   }
   Future<void> _clearAllData() async {
@@ -309,7 +302,7 @@ class _ProfileViewState extends State<ProfileView> {
                             // Avatar Row
                             Row(
                               children: [
-                                // Try to load avatar from assets, fallback to gradient
+                                // Avatar with user's initial
                                 Container(
                                   width: 64,
                                   height: 64,
@@ -317,46 +310,23 @@ class _ProfileViewState extends State<ProfileView> {
                                     gradient: LinearGradient(
                                       colors: [
                                         Colors.blueAccent,
-                                        Colors.purpleAccent.shade100
+                                        AppColors.primaryPurpleLight
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: ClipOval(
-                                    child: Image.network(
-                                      'https://i.pravatar.cc/150?img=${_nameController.text.hashCode % 70}', // Network image for profile
-                                      width: 64,
-                                      height: 64,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        // Fallback to asset image
-                                        return Image.asset(
-                                          'assets/icons/IconOlası1.jpg',
-                                          width: 64,
-                                          height: 64,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Center(
+                                  child: Center(
                                               child: Text(
-                                                'AJ',
-                                                style: TextStyle(
+                                      _nameController.text.isNotEmpty
+                                          ? _nameController.text[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
                                                   fontSize: 24,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
                                                 ),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return const Center(
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        );
-                                      },
                                     ),
                                   ),
                                 ),

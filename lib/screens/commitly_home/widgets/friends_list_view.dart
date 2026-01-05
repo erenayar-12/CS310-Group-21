@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/friend.dart';
-import '../../../friend_profile_page.dart';
+import '../../../routes/app_routes.dart';
 
 
 class FriendsListView extends StatelessWidget {
@@ -47,15 +47,10 @@ class FriendsListView extends StatelessWidget {
   Widget _buildFriendCard(BuildContext context, Friend f) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        Navigator.pushNamed(
           context,
-          MaterialPageRoute(builder: (_) => FriendProfilePage(
-            name: f.name,
-            level: f.level,
-            streak: f.streak,
-            topHabit: f.topHabit,
-            avatarColor: f.color,
-          )),
+          AppRoutes.friendProfile,
+          arguments: f,
         );
       },
       child: Container(

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../services/firestore_service.dart';
 
 class InviteTeamMembersDialog extends StatefulWidget {
   const InviteTeamMembersDialog({
-    required this.inviteLink,
+    required this.groupId,
     super.key,
   });
 
-  final String inviteLink;
+  final String groupId;
 
   @override
   State<InviteTeamMembersDialog> createState() =>
@@ -16,9 +18,11 @@ class InviteTeamMembersDialog extends StatefulWidget {
 
 class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
   final TextEditingController _emailController = TextEditingController();
+  bool _isLoading = false;
 
   void _copyInviteLink() {
-    Clipboard.setData(ClipboardData(text: widget.inviteLink));
+    final inviteLink = 'https://habittracker.app/invite/${widget.groupId}';
+    Clipboard.setData(ClipboardData(text: inviteLink));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Invite link copied to clipboard!'),
@@ -27,7 +31,7 @@ class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
     );
   }
 
-  void _sendEmailInvite() {
+  Future<void> _addMemberByEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,13 +42,58 @@ class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
       return;
     }
 
-    // TODO: Implement email sending logic
+    setState(() => _isLoading = true);
+
+    try {
+      final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+      
+      // Find user by email
+      final userId = await firestoreService.findUserIdByEmail(email);
+      
+      if (userId == null) {
+        if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Invite sent to $email'),
+            content: Text('User with email $email not found'),
+            backgroundColor: Colors.orange,
       ),
     );
+        return;
+      }
+
+      // Add user to group
+      await firestoreService.addMemberToGroup(widget.groupId, userId);
+
+      if (!mounted) return;
+      
     _emailController.clear();
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: Text('User $email has been added to the group!'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -119,7 +168,7 @@ class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Text(
-                      widget.inviteLink,
+                      'https://habittracker.app/invite/${widget.groupId}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -171,13 +220,20 @@ class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendEmailInvite(),
+                    onSubmitted: (_) => _addMemberByEmail(),
+                    enabled: !_isLoading,
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  onPressed: _sendEmailInvite,
-                  icon: const Icon(Icons.email),
+                  onPressed: _isLoading ? null : _addMemberByEmail,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.person_add),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.blue.shade50,
                     foregroundColor: Colors.blue.shade700,
@@ -187,11 +243,13 @@ class _InviteTeamMembersDialogState extends State<InviteTeamMembersDialog> {
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Press Enter or click to send',
+            Text(
+              _isLoading
+                  ? 'Adding member...'
+                  : 'Enter email and press Enter or click to add',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: Colors.grey.shade600,
               ),
             ),
           ],

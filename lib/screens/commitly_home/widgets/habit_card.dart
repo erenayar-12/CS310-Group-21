@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/habit.dart';
+import '../../../utils/app_colors.dart';
 
 class HabitCard extends StatefulWidget {
   const HabitCard({

@@ -3,10 +3,15 @@ import 'package:provider/provider.dart';
 
 import 'screens/auth/login_screen.dart';
 import 'screens/commitly_home/commitly_home_screen.dart';
+import 'screens/commitly_leaderboard/leaderboard_screen.dart';
+import 'friend_profile_page.dart';
+import 'data/habit_group.dart';
+import 'data/friend.dart';
 import 'services/auth_service.dart';
 import 'services/theme_service.dart';
 import 'services/firestore_service.dart';
 import 'utils/app_colors.dart';
+import 'utils/loading_widgets.dart';
 import 'routes/app_routes.dart';
 
 class CommitlyApp extends StatelessWidget {
@@ -25,7 +30,7 @@ class CommitlyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Commitly',
             theme: ThemeData.light(useMaterial3: true).copyWith(
-              fontFamily: 'Poppins',
+              textTheme: ThemeData.light().textTheme.apply(fontFamily: 'Poppins'),
               colorScheme: ColorScheme.fromSeed(
                 seedColor: Colors.purple,
                 brightness: Brightness.light,
@@ -33,7 +38,7 @@ class CommitlyApp extends StatelessWidget {
               scaffoldBackgroundColor: Colors.grey.shade100,
             ),
             darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-              fontFamily: 'Poppins',
+              textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Poppins'),
               colorScheme: ColorScheme.fromSeed(
                 seedColor: Colors.purple,
                 brightness: Brightness.dark,
@@ -53,6 +58,44 @@ class CommitlyApp extends StatelessWidget {
                 case AppRoutes.login:
                   return _createRoute(const LoginScreen(), settings);
                 case AppRoutes.home:
+                  return _createRoute(
+                    const CommitlyHomeScreen(
+                      key: PageStorageKey<String>('commitly_home'),
+                    ),
+                    settings,
+                  );
+                case AppRoutes.leaderboard:
+                  // Extract group from arguments
+                  final group = settings.arguments as HabitGroup?;
+                  if (group != null) {
+                    return _createRoute(
+                      LeaderboardScreen(group: group),
+                      settings,
+                    );
+                  }
+                  // Fallback to home if no group provided
+                  return _createRoute(
+                    const CommitlyHomeScreen(
+                      key: PageStorageKey<String>('commitly_home'),
+                    ),
+                    settings,
+                  );
+                case AppRoutes.friendProfile:
+                  // Extract friend from arguments
+                  final friend = settings.arguments as Friend?;
+                  if (friend != null) {
+                    return _createRoute(
+                      FriendProfilePage(
+                        name: friend.name,
+                        level: friend.level,
+                        streak: friend.streak,
+                        topHabit: friend.topHabit,
+                        avatarColor: friend.color,
+                      ),
+                      settings,
+                    );
+                  }
+                  // Fallback to home if no friend provided
                   return _createRoute(
                     const CommitlyHomeScreen(
                       key: PageStorageKey<String>('commitly_home'),
@@ -86,8 +129,8 @@ class _AuthGateState extends State<_AuthGate> {
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return const AppLoadingOverlay(
+            message: 'Checking authentication...',
           );
         }
 

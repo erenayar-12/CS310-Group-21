@@ -51,7 +51,7 @@ class TeamStatsCard extends StatelessWidget {
                 iconColor: AppColors.leaderboardBlue,
                 label: 'On-track members',
                 value: '${group.todayProgress}/${group.totalMembers}', // REAL PROGRESS
-                subtitle: 'Completed today's habit',
+                subtitle: 'Completed today\'s habit',
               ),
             ],
           ),

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import '../../data/habit.dart';
 import '../../data/habit_database.dart';
+import '../../utils/loading_widgets.dart';
+import '../../utils/app_colors.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -107,14 +109,37 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, // Light grey background
+      backgroundColor: AppColors.backgroundLight,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 16), // Add bottom padding
+          ? const Center(
+              child: AppLoadingIndicator(
+                message: 'Loading statistics...',
+              ),
+            )
+          : Column(
+              children: [
+                // Header with status bar coverage
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primaryPurple,
+                        AppColors.habitPink,
+                      ],
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: _buildHeader(),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 16),
               child: Column(
                 children: [
-                  _buildHeader(),
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -131,23 +156,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     const SizedBox(height: 80),
                   ],
                 ),
+                  ),
+                ),
+              ],
               ),
     );
   }
 
   Widget _buildHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.shade600,
-            Colors.pink.shade400,
-          ],
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 24, 16, 24),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
       child: Row(
         children: [
           Container(
@@ -198,7 +216,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       children: [
         _buildStatCard(
           icon: Icons.shield,
-          iconColor: Colors.purple,
+          iconColor: AppColors.primaryPurple,
           label: 'Total XP',
           value: '$_totalXP',
         ),
@@ -210,7 +228,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
         _buildStatCard(
           icon: Icons.calendar_today,
-          iconColor: Colors.purple,
+          iconColor: AppColors.primaryPurple,
           label: 'Active Habits',
           value: '$_activeHabits',
         ),
@@ -362,7 +380,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.purple,
+              color: AppColors.primaryPurple,
             ),
           ),
           const SizedBox(height: 24),
@@ -422,7 +440,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     if (habitDetails.isEmpty) {
       habitDetails.addAll([
         _HabitDetail(name: 'Morning Exercise', color: Colors.blue, count: 0),
-        _HabitDetail(name: 'Read a Book', color: Colors.purple, count: 0),
+        _HabitDetail(name: 'Read a Book', color: AppColors.primaryPurple, count: 0),
         _HabitDetail(name: 'Drink Water', color: Colors.green, count: 0),
       ]);
     }
@@ -502,7 +520,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Color _getHabitColor(String emoji) {
     // Map emojis to colors, or use default
     if (emoji.contains('🏃') || emoji.contains('💪')) return Colors.blue;
-    if (emoji.contains('📚') || emoji.contains('📖')) return Colors.purple;
+    if (emoji.contains('📚') || emoji.contains('📖')) return AppColors.primaryPurple;
     if (emoji.contains('💧') || emoji.contains('🥤')) return Colors.green;
     return Colors.grey;
   }
@@ -713,12 +731,12 @@ class _DailyXPChartPainter extends CustomPainter {
     // Draw line graph (flat at 0 for now as per screenshot)
     if (data.isNotEmpty) {
       final linePaint = Paint()
-        ..color = Colors.purple
+        ..color = AppColors.primaryPurple
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke;
 
       final pointPaint = Paint()
-        ..color = Colors.purple
+        ..color = AppColors.primaryPurple
         ..style = PaintingStyle.fill;
 
       final path = Path();

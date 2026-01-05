@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/loading_widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WeeklyTrackerPage extends StatefulWidget {
@@ -172,7 +173,10 @@ class _WeeklyTrackerPageState extends State<WeeklyTrackerPage> {
                 stream: firestoreService.getHabitsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return SkeletonListLoader(
+                      itemCount: 3,
+                      itemBuilder: (context, index) => SkeletonHabitCard(),
+                    );
                   }
 
                   if (snapshot.hasError) {

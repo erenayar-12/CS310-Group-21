@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../data/habit.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/loading_widgets.dart';
+import '../../utils/app_colors.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -51,7 +53,11 @@ class StatisticsScreen extends StatelessWidget {
                     }
 
                     if (compSnap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(
+                        child: AppLoadingIndicator(
+                          message: 'Loading statistics...',
+                        ),
+                      );
                     }
 
                     final completions = compSnap.data ?? [];
@@ -101,7 +107,7 @@ class StatisticsScreen extends StatelessWidget {
                                   icon: Icons.star,
                                   label: 'Total XP',
                                   value: '$totalXP',
-                                  color: Colors.purple,
+                                  color: AppColors.primaryPurple,
                                 ),
                                 _StatCard(
                                   icon: Icons.check_circle,
@@ -173,7 +179,7 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 24, 16, 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple.shade600, Colors.pink.shade400],
+          colors: [AppColors.primaryPurple, AppColors.habitPink],
         ),
       ),
       child: Row(
