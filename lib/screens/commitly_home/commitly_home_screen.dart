@@ -164,7 +164,6 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -187,7 +186,7 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           backgroundColor: AppColors.primaryPurple, // same purple as header
-          indicatorColor: Colors.white24,
+          indicatorColor: AppColors.navigationIndicator,
           labelTextStyle: WidgetStateProperty.resolveWith(
             (states) => AppTextStyles.navigationBarLabel,
           ),
@@ -197,28 +196,28 @@ class _CommitlyHomeScreenState extends State<CommitlyHomeScreen> {
           onDestinationSelected: _onNavigationDestinationSelected,
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.home, color: Colors.white),
+              icon: Icon(Icons.home_outlined, color: AppColors.navigationIconUnselected),
+              selectedIcon: Icon(Icons.home, color: AppColors.navigationIconSelected),
               label: 'Home',
             ),
             NavigationDestination(
-              icon: Icon(Icons.calendar_today_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.calendar_today, color: Colors.white),
+              icon: Icon(Icons.calendar_today_outlined, color: AppColors.navigationIconUnselected),
+              selectedIcon: Icon(Icons.calendar_today, color: AppColors.navigationIconSelected),
               label: 'Week',
             ),
             NavigationDestination(
-              icon: Icon(Icons.add_circle_outline, color: Colors.white70),
-              selectedIcon: Icon(Icons.add_circle, color: Colors.white),
+              icon: Icon(Icons.add_circle_outline, color: AppColors.navigationIconUnselected),
+              selectedIcon: Icon(Icons.add_circle, color: AppColors.navigationIconSelected),
               label: 'Add',
             ),
             NavigationDestination(
-              icon: Icon(Icons.group_outlined, color: Colors.white70),
-              selectedIcon: Icon(Icons.group, color: Colors.white),
+              icon: Icon(Icons.group_outlined, color: AppColors.navigationIconUnselected),
+              selectedIcon: Icon(Icons.group, color: AppColors.navigationIconSelected),
               label: 'Groups',
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline, color: Colors.white70),
-              selectedIcon: Icon(Icons.person, color: Colors.white),
+              icon: Icon(Icons.person_outline, color: AppColors.navigationIconUnselected),
+              selectedIcon: Icon(Icons.person, color: AppColors.navigationIconSelected),
               label: 'Profile',
             ),
           ],

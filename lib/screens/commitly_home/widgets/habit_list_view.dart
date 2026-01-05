@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/firestore_service.dart';
 import '../../../data/habit.dart';
+import '../../../utils/loading_widgets.dart';
 import 'home_header.dart';
 import 'today_progress_card.dart';
 import 'today_habits_header.dart';
@@ -27,13 +28,16 @@ class HabitListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = Provider.of<FirestoreService>(context);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
 
     return StreamBuilder<List<Habit>>(
       stream: firestoreService.getHabitsStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return SkeletonListLoader(
+            itemCount: 3,
+            itemBuilder: (context, index) => const SkeletonHabitCard(),
+          );
         }
 
         if (snapshot.hasError) {
