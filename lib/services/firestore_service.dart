@@ -513,12 +513,62 @@ class FirestoreService extends ChangeNotifier {
     }
   }
 
+  /// Leave a habit group (remove current user from members)
+  Future<void> leaveHabitGroup(String groupId) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to leave a habit group';
+      }
+
+      final groupRef = _firestore.collection('habitGroups').doc(groupId);
+      
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(groupRef);
+        if (!snapshot.exists) {
+          throw 'Habit group not found';
+        }
+
+        final data = snapshot.data()!;
+        final members = List<String>.from(data['members'] ?? []);
+        
+        // Check if user is a member
+        if (!members.contains(user.uid)) {
+          throw 'You are not a member of this group';
+        }
+
+        // Check if user is the creator
+        if (data['createdBy'] == user.uid) {
+          throw 'Group creator cannot leave. Please delete the group instead.';
+        }
+
+        // Remove user from members list
+        members.remove(user.uid);
+        
+        // Update members and totalMembers
+        transaction.update(groupRef, {
+          'members': members,
+          'totalMembers': members.length,
+        });
+      });
+
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
   Future<void> createHabitCompletion({
     required String habitId,
     String? habitName,
     String? habitEmoji,
     required DateTime completedAt,
     String? notes,
+    String? groupId,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -536,6 +586,7 @@ class FirestoreService extends ChangeNotifier {
         'userId': user.uid,
         'completedAt': Timestamp.fromDate(completedAt),
         'notes': notes,
+        if (groupId != null) 'groupId': groupId,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -660,6 +711,71 @@ class FirestoreService extends ChangeNotifier {
     });
   }
 
+  /// Add a member to a habit group by user ID
+  Future<void> addMemberToGroup(String groupId, String userId) async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'User must be authenticated to add members';
+      }
+
+      final groupRef = _firestore.collection('habitGroups').doc(groupId);
+      
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(groupRef);
+        if (!snapshot.exists) {
+          throw 'Habit group not found';
+        }
+
+        final data = snapshot.data()!;
+        final members = List<String>.from(data['members'] ?? []);
+        
+        // Check if user is already a member
+        if (members.contains(userId)) {
+          throw 'User is already a member of this group';
+        }
+
+        // Add user to members list
+        members.add(userId);
+        
+        // Update members and totalMembers
+        transaction.update(groupRef, {
+          'members': members,
+          'totalMembers': members.length,
+        });
+      });
+
+      _setLoading(false);
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  /// Find user ID by email
+  Future<String?> findUserIdByEmail(String email) async {
+    try {
+      // Search in users collection by email
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email.trim().toLowerCase())
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return null;
+      }
+
+      return querySnapshot.docs.first.id;
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    }
+  }
+
   // User data methods
   Future<Map<String, dynamic>?> getUserData() async {
     final user = _auth.currentUser;
@@ -779,9 +895,11 @@ class FirestoreService extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) throw 'User must be authenticated';
 
-    await _firestore.collection('users').doc(user.uid).update({
-      'xp': FieldValue.increment(amount),
-    });
+    // Update totalXp in users/{uid}/meta/stats (where getTotalXpStream reads from)
+    final statsRef = _userStatsRef;
+    await statsRef.set({
+      'totalXp': FieldValue.increment(amount),
+    }, SetOptions(merge: true));
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getHabitCompletionsForGroupStream({
